@@ -1,0 +1,31 @@
+lambx l  0.018082131653906396 
+gammax l  8.05593139513928 
+t l 0 
+true_field l  1.2998608863999117 
+t l 0 
+tr_sample l  11582.998361980675 
+t l 0 
+NN net_l2_sqrtsqrt_12049: R_s = -0.11194381676391825
+NN net_l2_sqrtsqrt_12049: R_m = -0.0794566713875886
+NN net_l2_sqrtsqrt_12049: R_h = -0.09887532933559609
+NN net_l2_sqrtsqrt_12049: t = 0.450931868600148
+NN net_l2_sqrtsqrt_12049: s = 0.5720821243969212
+NN net_l2_sqrtsqrt_12049: l = 0.4373698465643322
+NN net_l2_sqrtsqrt_12049: m = 0.6216163661882792
+NN net_l2_sqrtsqrt_12049: h = 0.5880947193026168
+NN net_l2_sqrtsqrt49: R_s = -0.14681054323770706
+NN net_l2_sqrtsqrt49: R_m = -0.10420474687648626
+NN net_l2_sqrtsqrt49: R_h = -0.12967166237666497
+NN net_l2_sqrtsqrt49: t = 0.450931868600148
+NN net_l2_sqrtsqrt49: s = 0.5720821243969212
+NN net_l2_sqrtsqrt49: l = 0.43314573373323656
+NN net_l2_sqrtsqrt49: m = 0.6216163661882792
+NN net_l2_sqrtsqrt49: h = 0.5880947193026168
+NN net_l2_sqrt49: R_s = 0.11762744457213718
+NN net_l2_sqrt49: R_m = 0.08349085710772902
+NN net_l2_sqrt49: R_h = 0.10389544199214198
+NN net_l2_sqrt49: t = 0.450931868600148
+NN net_l2_sqrt49: s = 0.5720821243969212
+NN net_l2_sqrt49: l = 0.4651824635987832
+NN net_l2_sqrt49: m = 0.6216163661882792
+NN net_l2_sqrt49: h = 0.5880947193026168

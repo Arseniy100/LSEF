@@ -1,0 +1,268 @@
+\begin{thebibliography}{43}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Arfken(1985)]{Arfken}
+G.~B. Arfken.
+\newblock \emph{Mathematical methods for physicists}.
+\newblock Academic Press, 1985.
+
+\bibitem[Banerjee et~al.(2015)Banerjee, Carlin, and
+  Gelfand]{banerjeeCarlinGelfand}
+S.~Banerjee, B.~P. Carlin, and A.~E. Gelfand.
+\newblock \emph{Hierarchical modeling and analysis for spatial data}.
+\newblock Taylor and Francis, 2015.
+
+\bibitem[Berre and Desroziers(2010)]{Berre2010}
+L.~Berre and G.~Desroziers.
+\newblock Filtering of background error variances and correlations by local
+  spatial averaging: A review.
+\newblock \emph{Mon. Weather Rev.}, 138\penalty0 (10):\penalty0 3693--3720,
+  2010.
+
+\bibitem[Berre et~al.(2015)Berre, Varella, and Desroziers]{Berre2015}
+L.~Berre, H.~Varella, and G.~Desroziers.
+\newblock Modelling of flow-dependent ensemble-based background-error
+  correlations using a wavelet formulation in {4D-Var} at
+  {M{\'e}t{\'e}o}-{France}.
+\newblock \emph{Q. J. Roy. Meteorol. Soc.}, 141\penalty0 (692):\penalty0
+  2803--2812, 2015.
+
+\bibitem[Bhat et~al.(2012)Bhat, Haran, Olson, and Keller]{Bhat}
+K.~Bhat, M.~Haran, R.~Olson, and K.~Keller.
+\newblock Inferring likelihoods and climate system characteristics from climate
+  models and multiple tracers.
+\newblock \emph{Environmetrics}, 23\penalty0 (4):\penalty0 345--362, 2012.
+
+\bibitem[Bonavita et~al.(2016)Bonavita, H{\'o}lm, Isaksen, and
+  Fisher]{Bonavita}
+M.~Bonavita, E.~H{\'o}lm, L.~Isaksen, and M.~Fisher.
+\newblock The evolution of the {ECMWF} hybrid data assimilation system.
+\newblock \emph{Quart. J. Roy. Meteor. Soc.}, 142\penalty0 (694):\penalty0
+  287--303, 2016.
+
+\bibitem[Bruinsma et~al.(2022)Bruinsma, Tegn{\'e}r, and Turner]{Bruinsma2022}
+W.~P. Bruinsma, M.~Tegn{\'e}r, and R.~E. Turner.
+\newblock Modelling non-smooth signals with complex spectral structure.
+\newblock In \emph{International Conference on Artificial Intelligence and
+  Statistics}, pages 5166--5195. PMLR, 2022.
+
+\bibitem[Buehner et~al.(2013)Buehner, Morneau, and Charette]{Buehner2013}
+M.~Buehner, J.~Morneau, and C.~Charette.
+\newblock Four-dimensional ensemble-variational data assimilation for global
+  deterministic weather prediction.
+\newblock \emph{Nonlin. Process. Geophys.}, 20\penalty0 (5):\penalty0 669--682,
+  2013.
+
+\bibitem[Dahlhaus(1997)]{Dahlhaus1997}
+R.~Dahlhaus.
+\newblock Fitting time series models to nonstationary processes.
+\newblock \emph{Ann. Stat.}, 25\penalty0 (1):\penalty0 1--37, 1997.
+
+\bibitem[Dahlhaus(2012)]{Dahlhaus2012}
+R.~Dahlhaus.
+\newblock Locally stationary processes.
+\newblock In \emph{Handbook of statistics}, volume~30, pages 351--413.
+  Elsevier, 2012.
+
+\bibitem[Fisher(2003)]{Fisher}
+M.~Fisher.
+\newblock Background error covariance modelling.
+\newblock \emph{Proc. ECMWF Semin. on recent developments in data assimilation
+  for atmosphere and ocean, 8-12 September 2003}, pages 45--64, 2003.
+
+\bibitem[Furrer and Bengtsson(2007)]{Furrer}
+R.~Furrer and T.~Bengtsson.
+\newblock Estimation of high-dimensional prior and posterior covariance
+  matrices in {Kalman} filter variants.
+\newblock \emph{J. Multivar. Anal.}, 98\penalty0 (2):\penalty0 227--255, 2007.
+
+\bibitem[Gage and Nastrom(1986)]{GageNastrom}
+K.~S. Gage and G.~D. Nastrom.
+\newblock Theoretical interpretation of atmospheric wavenumber spectra of wind
+  and temperature observed by commercial aircraft during {GASP}.
+\newblock \emph{Journal of Atmospheric Sciences}, 43\penalty0 (7):\penalty0
+  729--740, 1986.
+
+\bibitem[Goodfellow et~al.(2016)Goodfellow, Bengio, and Courville]{Goodfellow}
+I.~Goodfellow, Y.~Bengio, and A.~Courville.
+\newblock \emph{Deep learning}.
+\newblock MIT press, 2016.
+
+\bibitem[Heaton et~al.(2014)Heaton, Katzfuss, Berrett, and Nychka]{Katzfuss}
+M.~Heaton, M.~Katzfuss, C.~Berrett, and D.~Nychka.
+\newblock Constructing valid spatial processes on the sphere using kernel
+  convolutions.
+\newblock \emph{Environmetrics}, 25\penalty0 (1):\penalty0 2--15, 2014.
+
+\bibitem[Higdon et~al.(1999)Higdon, Swall, and Kern]{Higdon}
+D.~Higdon, J.~Swall, and J.~Kern.
+\newblock Non-stationary spatial modeling.
+\newblock \emph{Bayes. Statist.}, 6\penalty0 (1):\penalty0 761--768, 1999.
+
+\bibitem[Hou et~al.(2021)Hou, Lawrence, and Hero]{Hou}
+E.~Hou, E.~Lawrence, and A.~O. Hero.
+\newblock Penalized ensemble {Kalman} filters for high dimensional non-linear
+  systems.
+\newblock \emph{PloS one}, 16\penalty0 (3):\penalty0 e0248046, 2021.
+
+\bibitem[Houtekamer and Mitchell(1998)]{Houtekamer1998}
+P.~L. Houtekamer and H.~L. Mitchell.
+\newblock Data assimilation using an ensemble {Kalman} filter technique.
+\newblock \emph{Mon. Weather Rev.}, 126\penalty0 (3):\penalty0 796--811, 1998.
+
+\bibitem[Kakihara(1997)]{Kakihara}
+Y.~Kakihara.
+\newblock \emph{Multidimensional second order stochastic processes}.
+\newblock World Scientific, 1997.
+
+\bibitem[Kasanick{\`y} et~al.(2015)Kasanick{\`y}, Mandel, and Vejmelka]{Mandel}
+I.~Kasanick{\`y}, J.~Mandel, and M.~Vejmelka.
+\newblock Spectral diagonal ensemble {Kalman} filters.
+\newblock \emph{Nonlinear Processes in Geophysics}, 22\penalty0 (4):\penalty0
+  485--497, 2015.
+
+\bibitem[Ledoit and Wolf(2004)]{Ledoit}
+O.~Ledoit and M.~Wolf.
+\newblock A well-conditioned estimator for large-dimensional covariance
+  matrices.
+\newblock \emph{J. Multivar. Anal.}, 88\penalty0 (2):\penalty0 365--411, 2004.
+
+\bibitem[Lemos and Sans{\'o}(2009)]{Sanso2009}
+R.~T. Lemos and B.~Sans{\'o}.
+\newblock A spatio-temporal model for mean, anomaly, and trend fields of north
+  atlantic sea surface temperature.
+\newblock \emph{Journal of the American Statistical Association}, 104\penalty0
+  (485):\penalty0 5--18, 2009.
+
+\bibitem[Li and Zhu(2020)]{Li}
+Y.~Li and Z.~Zhu.
+\newblock Spatio-temporal modeling of global ozone data using convolution.
+\newblock \emph{Japanese Journal of Statistics and Data Science}, 3\penalty0
+  (1):\penalty0 153--166, 2020.
+
+\bibitem[Lorenc et~al.(2000)Lorenc, Ballard, Bell, Ingleby, Andrews, Barker,
+  Bray, Clayton, Dalby, Li, et~al.]{Lorenc3DV}
+A.~Lorenc, S.~Ballard, R.~Bell, N.~Ingleby, P.~Andrews, D.~Barker, J.~Bray,
+  A.~Clayton, T.~Dalby, D.~Li, et~al.
+\newblock The {Met}. {Office} global three-dimensional variational data
+  assimilation scheme.
+\newblock \emph{Quarterly Journal of the Royal Meteorological Society},
+  126\penalty0 (570):\penalty0 2991--3012, 2000.
+
+\bibitem[Lorenc(2017)]{Lorenc2017}
+A.~C. Lorenc.
+\newblock Improving ensemble covariances in hybrid variational data
+  assimilation without increasing ensemble size.
+\newblock \emph{Quart. J. Roy. Meteor. Soc.}, 143\penalty0 (703):\penalty0
+  1062--1072, 2017.
+
+\bibitem[Lorenc et~al.(2014)Lorenc, Bowler, Clayton, Pring, and
+  Fairbairn]{Lorenc}
+A.~C. Lorenc, N.~E. Bowler, A.~M. Clayton, S.~R. Pring, and D.~Fairbairn.
+\newblock Comparison of hybrid-{4DEnVar} and hybrid-{4DVar} data assimilation
+  methods for global {NWP}.
+\newblock \emph{Mon. Weather Rev.}, 143\penalty0 (2015):\penalty0 212--229,
+  2014.
+
+\bibitem[Lorenz and Emanuel(1998)]{Lorenz1998}
+E.~N. Lorenz and K.~A. Emanuel.
+\newblock Optimal sites for supplementary weather observations: {Simulation}
+  with a small model.
+\newblock \emph{J. Atmos. Sci.}, 55\penalty0 (3):\penalty0 399--414, 1998.
+
+\bibitem[Mallat et~al.(1998)Mallat, Papanicolaou, and Zhang]{Mallat}
+S.~Mallat, G.~Papanicolaou, and Z.~Zhang.
+\newblock Adaptive covariance estimation of locally stationary processes.
+\newblock \emph{The annals of Statistics}, 26\penalty0 (1):\penalty0 1--47,
+  1998.
+
+\bibitem[Marinucci and Peccati(2011)]{Marinucci}
+D.~Marinucci and D.~Peccati.
+\newblock \emph{Random Fields on the Sphere}.
+\newblock Cambridge University Press, 2011.
+
+\bibitem[M{\'e}n{\'e}trier et~al.(2015)M{\'e}n{\'e}trier, Montmerle, Michel,
+  and Berre]{Menetrier}
+B.~M{\'e}n{\'e}trier, T.~Montmerle, Y.~Michel, and L.~Berre.
+\newblock Linear filtering of sample covariances for ensemble-based data
+  assimilation. {Part} {I}: optimality criteria and application to variance
+  filtering and covariance localization.
+\newblock \emph{Mon. Weather Rev.}, 143\penalty0 (5):\penalty0 1622--1643,
+  2015.
+
+\bibitem[Priestley(1965)]{Priestley}
+M.~B. Priestley.
+\newblock Evolutionary spectra and non-stationary processes.
+\newblock \emph{Journal of the Royal Statistical Society. Series B
+  (Methodological)}, 27\penalty0 (2):\penalty0 204--237, 1965.
+
+\bibitem[Priestley(1988)]{Priestley1988}
+M.~B. Priestley.
+\newblock \emph{Non-linear and non-stationary time series analysis}.
+\newblock 1988.
+
+\bibitem[S{\ae}trom and Omre(2013)]{SaetromOmre}
+J.~S{\ae}trom and H.~Omre.
+\newblock Uncertainty quantification in the ensemble {Kalman} filter.
+\newblock \emph{Scand. J. Stat.}, 40\penalty0 (4):\penalty0 868--885, 2013.
+
+\bibitem[Searle and Khuri(2017)]{Searle2017}
+S.~R. Searle and A.~I. Khuri.
+\newblock \emph{Matrix algebra useful for statistics}.
+\newblock John Wiley \& Sons, 2017.
+
+\bibitem[Skauvold and Eidsvik(2019)]{Skauvold}
+J.~Skauvold and J.~Eidsvik.
+\newblock Parametric spatial covariance models in the ensemble {Kalman} filter.
+\newblock \emph{Spatial statistics}, 29:\penalty0 226--242, 2019.
+
+\bibitem[Szeg\H{o}(1939)]{Szego}
+G.~Szeg\H{o}.
+\newblock \emph{Orthogonal polynomials}.
+\newblock American Mathematical Soc., 1939.
+
+\bibitem[Tobar et~al.(2015)Tobar, Bui, and Turner]{Tobar2015}
+F.~Tobar, T.~D. Bui, and R.~E. Turner.
+\newblock Learning stationary time series using gaussian processes with
+  nonparametric kernels.
+\newblock \emph{Advances in neural information processing systems}, 28, 2015.
+
+\bibitem[Trenberth and Solomon(1993)]{Trenberth}
+K.~E. Trenberth and A.~Solomon.
+\newblock Implications of global atmospheric spatial spectra for processing and
+  displaying data.
+\newblock \emph{Journal of climate}, 6\penalty0 (3):\penalty0 531--545, 1993.
+
+\bibitem[Tsyrulnikov and Rakitko(2017)]{HBEF}
+M.~Tsyrulnikov and A.~Rakitko.
+\newblock A hierarchical {Bayes} ensemble {Kalman} filter.
+\newblock \emph{Physica D}, 338:\penalty0 1--16, 2017.
+
+\bibitem[Tsyrulnikov and Rakitko(2019)]{DSADM}
+M.~Tsyrulnikov and A.~Rakitko.
+\newblock Impact of non-stationarity on hybrid ensemble filters: {A} study with
+  a doubly stochastic advection-diffusion-decay model.
+\newblock \emph{Quart. J. Roy. Meteorol. Soc.}, pages 2255--2271, 2019.
+
+\bibitem[Ueno and Tsuchiya(2009)]{Ueno}
+G.~Ueno and T.~Tsuchiya.
+\newblock Covariance regularization in inverse space.
+\newblock \emph{Q. J. Roy. Meteorol. Soc.}, 135\penalty0 (642):\penalty0
+  1133--1156, 2009.
+
+\bibitem[Varshalovich et~al.(1988)Varshalovich, Moskalev, and
+  Khersonskii]{Varshalovich}
+D.~Varshalovich, A.~Moskalev, and V.~Khersonskii.
+\newblock \emph{Quantum theory of angular momentum}.
+\newblock World Scientific, 1988.
+
+\bibitem[Yadrenko(1983)]{yadrenko}
+M.~I. Yadrenko.
+\newblock \emph{Spectral theory of random fields}.
+\newblock Optimization Software, 1983.
+
+\end{thebibliography}

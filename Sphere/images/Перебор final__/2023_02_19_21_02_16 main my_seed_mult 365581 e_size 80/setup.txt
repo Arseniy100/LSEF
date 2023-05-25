@@ -1,0 +1,9 @@
+my_seed_mult = 365581
+n_max = 49
+e_size = 80
+gamma_fixed = False
+kappa_default = 2.0
+mu_NSL = 3.0
+n_obs = 2451
+ e_size 80iter 0, 1) rnd: 0.860518527899727
+iter 0, rnd: 0.048236546889943395

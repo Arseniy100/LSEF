@@ -1,0 +1,10 @@
+[workspace]
+restore_data_on_startup = True
+save_data_on_exit = True
+save_history = True
+save_non_project_files = False
+
+[main]
+version = 0.2.0
+recent_files = ['nn_train.py', 'Results.py', 'configs\\config.py', 'Main.py', 'functions\\DLSM_functions.py', 'mult_times_script.py', 'NeuralNetworks\\Networks.py', 'NeuralNetworks\\LossFunctions.py', 'NeuralNetworks\\DataPreparation.py', 'Predictors.py', 'NeuralNetworks\\Activations.py', 'functions\\tools.py', 'Band.py', 'DLSM - main.py']
+

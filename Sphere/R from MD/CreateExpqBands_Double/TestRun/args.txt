@@ -1,0 +1,9 @@
+Args
+
+nmax=60
+nband=6
+halfwidth_min=6
+nc2=4
+halfwidth_max=30
+q_tranfu=2
+rectang = FALSE
