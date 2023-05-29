@@ -1,0 +1,31 @@
+LSEF: the locally stationary convolutional ensemble filter
+
+This repo contains Python and R code that allows one to carry out numerical experiments with the 
+locally stationary convolutional ensemble filter (LSEF).
+ 
+The LSEF is proposed and described in the paper 
+“A locally stationary convolutional ensemble filter” by 
+Michael Tsyrulnikov and Arseniy Sotskiy 
+(...). 
+
+With the code in the repo, one can reproduce results reported in the paper.
+
+In the paper, we propose a new kind of ensemble filter in which prior covariances are regularized 
+with a spatial model on the sphere. The model termed the Locally Stationary Convolution Model 
+is a constrained version of the general Gausssian process convolution model. 
+The spatially variable convolution kernel of the model is estimated online using the prior ensemble. 
+Local stationarity means that the convolution kernel slowly changes in space as compared to its length scale. 
+The model is estimated online in a two-stage procedure. 
+First, ensemble perturbations are bandpass filtered in several wavenumber bands to extract aggregated local spatial spectra. 
+Second, a neural network recovers the local spectra from sample variances of the filtered fields. 
+The estimated local spectra are converted to the spatially variable convolution kernel, 
+from which a square root of the model prior covariance matrix is computed and used in the analysis. 
+
+The new  filter is successfully tested in numerical experiments with a static toy model on the sphere 
+(see folder Sphere in the repo) and in cyclic filtering on the circle (see folder Circle in the repo).
+
+The author of the Python code is Arseniy Sotskiy, arseniy.sotskiy@gmail.com
+
+The author of the R code is Michael Tsyrulnikov, mik.tsyrulnikov@gmail.com
+
+The corresponding author of the paper is Michael Tsyrulnikov mik.tsyrulnikov@gmail.com
