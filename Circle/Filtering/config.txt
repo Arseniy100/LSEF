@@ -1,0 +1,38 @@
+mode;0            # 0:single mdl&flt runs, 1:predict BBx, 2:predict BB_KF, 3:worlds-ave BBx, 4:worlds-ave BB_HHBEF
+n;120             # spatial grid size (number of points), unitless
+stride;2          # nu of model time steps between consecutive analyses (DSADSM: 2)
+time_filter;5000 # number of analyses to be computed (10000 nrm, 100000 to generate B_clim)
+dt_h;6            # mdl time step, "atm time"(h) DSADM: =6; Lor05: =3(J>1), =2(J=1), =1(J=0), =1.5(F64)
+U_mean;20         # 10  (mean flow velocity for both tert and unperturbed models, m/s)
+V_char;3          # 1-10   (characteristic velocity, m/s, defines the mean time scale, all flds), 3 nrm
+L_mult;5          # L=L_mult*mesh, 5 (defines the mean spatial length scale)
+NSL;3             # L_perturb=L*NSL (1--3) spatial len scale for tertiary fields, 2--3 nrm
+sd_x;5            # 5 1   (SD(x_truth)), just scaling  
+sd_U;10           # 0--40  (SD(U_perturb)), 0 for stationarity        
+kappa_rho;3       # 1--8    (multiplicative spread of rho), 1 for stationarity, 2--3 nrm
+pi_rho;0.02       # 0--0.1  (Pr(negative rho)) 0.02 
+kappa_nu;3        # 1--8    (multiplicative spread of nu), 1 for stationarity, 2--3 nrm
+pi_nu;0.01       # 0--0.05 (Pr(negative nu)) 0.01
+kappa_sigma;3    # 1--8    (multiplicative spread of sigma), 1 for stationarity, 2--3 nrm
+m;10             # number of spatial grid meshes betw obs: DSADM:6--10, Lor(J>0):3, Lor(J=0)=2
+sqrt_R;6         # DSADM:close to sd_x, Lorenz:2 (obs-err st.dev.)
+ne;10            # ensm size: 10,20,30,40,...
+perform_kf_ekf;1 # +1 for KF, +2 for EKF, -1 for none
+perform_HHBEF;3  # +1 (one filter) or +3 (3 filters: Var, EnKF, EnVar) or -1
+w_cvr;1          # HHBEF's prior B: weight Clim Vs Recent. hbef:0,hbf:0.1,var:1. envar:1, 0 if there is no B_clim
+w_evp10;1        # HHBEF'posterior B: weight Ensm Vs Prior for ne=10. enkf:1, hbef:0.2,hbf:0.2,var:0, envar:0.5
+perform_LSEF;1   # +1 or -1
+B2S_method_;1    # 1 for NN, 2 for SVshape
+w_evc10;1        # LSEF'posterior B: weight B_LSM vs B_clim
+SaveClim;-1      # +1: CALIBR run: save KF's time mean CVM & b_shape & cvfs + EnKF's cvfs, -1: don't save, normal run
+ntime_B_store;0 # nu asml steps to store B in KF & HHBEF (and save for NN train), =2500 store nrm,  =0 if no need to store
+nband; 6         # nu of bands
+inflation;1.02                    # inflate ensm perturbations: 1.03--1.1 (1.02)
+inflation_LSEF;1.0                # inflate ensm perturbations in LSEF (just to verify that 1.0 is the best choice)
+spa_shift_mx_S;0                  # spatial averaging of ensm-CVM S, max shift in one direction (=0 if no ave)
+HHBEF_SelfClim;-1                 # +1: HHBEF uses B_clim from the current KF run; -1: from external KF's long-run-mean CVM
+F_Lorenz;32                       # >5, 32 nrm
+J_Lorenz;2                        # K_Lorenz=2*J_Lorenz +1, J_Lorenz=1,...5 
+sd_noise_Lorenz;1e-5              # per 6h atm time, for 2pi/60 mesh size (0.01)
+model_type;1                      # Fcst Mdl: 1:DSADM, 2:Lorenz05, 3:linearized Lorenz05
+M;1                               # number of worlds: nrm 1, with mode=2: 5000

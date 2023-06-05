@@ -1,0 +1,43 @@
+
+# Logistic function definition:
+
+b = 1 # default
+logistic(x) = (1+exp(b)) / (1+exp(b-x)) 
+
+#............................................................................
+# f(w) = 1 / (1 +lambda*w)^gamma)
+# 
+# f is the modal spectrum,
+# w the wvn
+
+
+#...........................................
+# Generate random spectrum
+# (1) Setup
+
+kappa = 2 # nstationarity degree,  reasonable range: from 1 to 6, 2--3 nrm
+kappa_log = log(kappa)
+
+# lambda:
+
+lambda_add  = dx*1
+lambda_mult = dx*2
+lambda_med = lambda_add + lambda_mult
+
+# gamma
+
+gamma_add  = 1 # gamma<1 results in unrealistically energetic small scales
+gamma_mult = 1.5 # gamma>4 result in almost const ff at the smallest wvns
+gamma_med = gamma_add + gamma_mult
+
+#..........................................
+# (2) Generate
+
+lambda = lambda_add + lambda_mult * logistic(log(kappa) * rnorm(1, mean=0, sd=1)) # in R, rnorm(1, mean=0, sd=1) is a realization from N(0,1)
+
+gamma = gamma_add + gamma_mult * logistic(log(kappa) * rnorm(1, mean=0, sd=1))
+
+ff=1/(1+(lambda*ww)^gamma)   # THE (modal) SPECTRUM, nonp-normalized
+#..........................................
+
+

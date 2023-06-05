@@ -1,0 +1,2 @@
+n_realiz;1        # nu of replicates (truth and filters)
+seed;8260210       # random seed, determines all seeds
