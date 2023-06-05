@@ -169,7 +169,7 @@ plt.grid()
 plt.xlabel('distance, rad.')
 plt.title(f'response functions')
 plt.show()
-assert False
+# assert False
 
 #%% Get modal spectrum b_n(x)
 
