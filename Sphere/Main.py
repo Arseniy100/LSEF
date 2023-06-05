@@ -149,8 +149,27 @@ print(transfer_functions.shape)
 
 band_centers = [band.center for band in bands]
 
+plt.figure()
+for band in bands:
+    plt.plot(np.arange(band.shape),
+              band.transfer_function,)
+    plt.scatter([band.center], [0], label='center')
+plt.grid()
+plt.xlabel('wavenumber')
+# plt.legend(loc='best')
+plt.title('transfer functions')
+plt.show()
 
-
+plt.figure()
+for band in bands:
+    plt.plot(np.arange(band.shape),
+              band.response_function)
+plt.grid()
+# plt.legend(loc='best')
+plt.xlabel('distance, rad.')
+plt.title(f'response functions')
+plt.show()
+assert False
 
 #%% Get modal spectrum b_n(x)
 
