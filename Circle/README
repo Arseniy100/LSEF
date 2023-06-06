@@ -1,1 +1,3 @@
-
+This folder contains R code for LSEF on the circle.
+Subfolder  StaticAnalyses  containes code for testing the LSEF's analysis on the circle.
+Subfolder  Filtering  containes code for testing LSEF in the sequential filtering mode.
