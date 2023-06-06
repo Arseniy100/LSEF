@@ -5,7 +5,7 @@
 # 
 # A Rakitko
 # M Tsyrulnikov (current code owner)
-# Mar 2019, May 2021, Mar 2023
+# Mar 2019, May 2021, Jun 2023
 
 
 truth_worlds_and_filters = function(seed){
@@ -112,7 +112,8 @@ truth_worlds_and_filters = function(seed){
   B2S_method_     = config[config$V1 == "B2S_method_", 2]
   w_evc10         = config[config$V1 == "w_evc10", 2]
   SaveClim        = config[config$V1 == "SaveClim", 2]
-  ntime_B_store   = config[config$V1 == "ntime_B_store", 2]
+  ntime_EE_store  = config[config$V1 == "ntime_EE_store", 2]
+  ntime_B_KF_store= config[config$V1 == "ntime_B_KF_store", 2]
   nband           = config[config$V1 == "nband", 2]
   inflation       = config[config$V1 == "inflation", 2]
   inflation_LSEF  = config[config$V1 == "inflation_LSEF", 2]
@@ -176,7 +177,8 @@ truth_worlds_and_filters = function(seed){
   
   if(mode == 0) {
     predict_BBx   = FALSE
-    store_BB_KF_EnKF = 0 # KF & EnKF: =-1 no, =0 only ntime_B_store time instants + all times in spat ave form, =1 full CVMs all anls time steps 
+    store_EE_EnKF = 0 # =-1 no, =0 only ntime_EE_store   cycles + all times in spat ave form, =1 all EEs
+    store_B_KF    =0  # =-1 no, =0 only ntime_B_KF_store cycles + all times in spat ave form, =1 all CVMs
     worlds           = FALSE
     worldsAve_BBx    = FALSE
     worldsAve_BB_HHBEF = FALSE
@@ -193,7 +195,8 @@ truth_worlds_and_filters = function(seed){
   if(mode == 1){          # estm CVM of x by Predicting them
     M=1
     predict_BBx   = TRUE
-    store_BB_KF_EnKF = -1
+    store_EE_EnKF = -1
+    store_B_KF = -1
     worlds           = FALSE
     worldsAve_BBx    = FALSE
     worldsAve_BB_HHBEF = FALSE
@@ -207,7 +210,8 @@ truth_worlds_and_filters = function(seed){
   if(mode == 2){          # estm CVM of KF' background errors by Predicting them
     M=1
     predict_BBx   = FALSE
-    store_BB_KF_EnKF = 1
+    store_EE_EnKF = 1
+    store_B_KF = -1
     worlds           = FALSE
     worldsAve_BBx    = FALSE
     worldsAve_BB_HHBEF = FALSE
@@ -221,7 +225,8 @@ truth_worlds_and_filters = function(seed){
   
   if(mode == 3 & M > 1){ # estm BBx_worldsAve (by averaging over worlds)
     predict_BBx   = FALSE
-    store_BB_KF_EnKF = -1
+    store_EE_EnKF = -1
+    store_B_KF = -1
     worlds           = TRUE
     worldsAve_BBx    = TRUE
     worldsAve_BB_HHBEF = FALSE
@@ -234,7 +239,8 @@ truth_worlds_and_filters = function(seed){
   
   if(mode == 4 & M > 1){ # estm BB_HHBEF_worldsAve (by averaging over worlds)
     predict_BBx   = FALSE
-    store_BB_KF_EnKF = -1
+    store_EE_EnKF = -1
+    store_B_KF = -1
     worlds           = TRUE
     worldsAve_BBx    = FALSE
     worldsAve_BB_HHBEF = TRUE
@@ -378,7 +384,8 @@ truth_worlds_and_filters = function(seed){
   parameters$spa_shift_mx_S       <- spa_shift_mx_S
   parameters$perform_kf_ekf       <- perform_kf_ekf
   parameters$SaveClim             <- SaveClim
-  parameters$ntime_B_store        <- ntime_B_store
+  parameters$ntime_EE_store       <- ntime_EE_store
+  parameters$ntime_B_KF_store     <- ntime_B_KF_store
   parameters$perform_HHBEF        <- perform_HHBEF
   parameters$perform_LSEF         <- perform_LSEF
   parameters$B2S_method           <- B2S_method
@@ -695,16 +702,18 @@ truth_worlds_and_filters = function(seed){
   #------------------------------------------------------
   # FILTERING
   
+  if(ntime_EE_store > (ntime_filter*3/4 -1)) ntime_EE_store=ntime_filter*3/4 -1
+  if(ntime_EE_store == 0) store_EE_EnKF = -1
   
-  if(ntime_B_store > (ntime_filter*3/4 -1)) ntime_B_store=ntime_filter*3/4 -1
-  if(ntime_B_store == 0) store_BB_KF_EnKF = -1
+  if(ntime_B_KF_store > (ntime_filter*3/4 -1)) ntime_B_KF_store=ntime_filter*3/4 -1
+  if(ntime_B_KF_store == 0) store_B_KF = -1
   
   #------------------------------------------------------
   # One-world KF/EKF
   
   parameters_KF=parameters
   KF_fRMSE = 0
-  
+
   if(perform_kf_ekf > 0){
     
     message("Run KF")
@@ -720,12 +729,12 @@ truth_worlds_and_filters = function(seed){
                     R_diag, m, OBS, 
                     X_flt_start, A_start, 
                     model_type, filter_type, 
-                    ntime_B_store, store_BB_KF_EnKF)    
+                    ntime_B_KF_store, store_B_KF)    
     
     KF_fRMSE  = rmse(KF_res$XXf[,], X_true[,])
     message("KF_fRMSE=", signif(KF_fRMSE,4))
     
-    B_KF = KF_res$BB          #   [1:nx, 1:nx, 1:ntime_B_store]
+    B_KF = KF_res$BB          #   [1:nx, 1:nx, 1:ntime_B_KF_store]
     ntime_B_KF = dim(B_KF)[3]
     spat_ave_cvfs = KF_res$spat_ave_cvfs
     
@@ -812,11 +821,10 @@ truth_worlds_and_filters = function(seed){
 
     save_KF_data = TRUE
     if(save_KF_data){
-      filename=paste0("KF_data", "_nx", nx,
-                      "_L_mult", L_mult,
-                      "_tenKappa", kappa_rho*10, 
-                      "_tenNSL", NSL*10, "_", pi_,
-                      "_m", m, "_sqrtR", sqrt_R, "_sdx", sd_x,
+      filename=paste0("KF_data", "_nt", ntime_B_KF_store,
+                      "_kap", kappa_rho, 
+                      "_mu", NSL, "_pi", pi_rho*100,
+                      # "_m", m, "_e", sqrt_R, "_sdx", sd_x,
                       ".RData")
       KF_data = list(B_KF=B_KF, B_clim=B_clim, 
                        b_shape=b_shape, spat_ave_cvfs=spat_ave_cvfs)
@@ -920,7 +928,7 @@ truth_worlds_and_filters = function(seed){
                         X_flt_start, Ba_start, Xae_start, B_clim,
                         ne, w_cvr, w_evp10, detFc_emean, 
                         inflation, spa_shift_mx_Bf, spa_shift_mx_S, C_lcz, 
-                        ntime_B_store, store_BB_KF_EnKF, 
+                        ntime_EE_store, store_EE_EnKF, 
                         model_type)
       
       HHBEF_fRMSE[i_HBEF]  = rmse(HHBEF_res$XXf[,], X_true[,])
@@ -928,7 +936,7 @@ truth_worlds_and_filters = function(seed){
       
       if(i_HBEF == i_HBEF_EnKF){
         spat_ave_cvfs_EnKF = HHBEF_res$spat_ave_cvfs 
-        SS_lcz = HHBEF_res$SS_lcz
+        EE = HHBEF_res$EE
         S_mean = HHBEF_res$S_mean
         
         # Calc  b_shape_EnKF  from  S_mean
@@ -946,7 +954,7 @@ truth_worlds_and_filters = function(seed){
     
     HHBEF_one_world = HHBEF_res
     filter$HHBEF_one_world = HHBEF_one_world
-    B_EnKF = HHBEF_res$SS_lcz
+    B_EnKF = HHBEF_res$EE
     
     # image2D(HHBEF_res$XXf[,1:min(200, time_filter)], main="XXf")
     # image2D(HHBEF_res$XXa[,1:min(200, time_filter)], main="XXa")
@@ -964,14 +972,13 @@ truth_worlds_and_filters = function(seed){
     
     save_EnKF_data = TRUE
     if(save_EnKF_data){
-      filename=paste0("EnKF_data", "_nx", nx,
-                      "_L_mult", L_mult,
-                      "_tenKappa", kappa_rho*10, 
-                      "_tenNSL", NSL*10, "_", pi_,
-                      "_m", m, "_sqrtR", sqrt_R, "_sdx", sd_x,
+      filename=paste0("EnKF_data", "_nt", ntime_EE_store,
+                      "_kap", kappa_rho, 
+                      "_mu", NSL, "_pi", pi_rho*100,
+                      # "_m", m, "_e", sqrt_R, "_sdx", sd_x,
                       ".RData")
       
-      EnKF_data = list(SS_lcz=SS_lcz, S_mean=S_mean, b_shape_EnKF=b_shape_EnKF,
+      EnKF_data = list(EE=EE, S_mean=S_mean, b_shape_EnKF=b_shape_EnKF,
                       spat_ave_cvfs_EnKF = spat_ave_cvfs_EnKF)
       save(EnKF_data, file=filename) 
     }
@@ -1109,7 +1116,7 @@ truth_worlds_and_filters = function(seed){
                           X_flt_start, Ba_start, Xae_start, B_clim,
                           ne, w_cvr, w_evp10,  detFc_emean, 
                           inflation, spa_shift_mx_Bf, spa_shift_mx_S, C_lcz,
-                          ntime_B_store, store_BB_KF_EnKF, 
+                          ntime_EE_store, store_EE_EnKF, 
                           model_type)
       
         #save(HHBEF_res, file = paste0(path,'/DATA/HHBEF_',iter, '.Rdata'))
