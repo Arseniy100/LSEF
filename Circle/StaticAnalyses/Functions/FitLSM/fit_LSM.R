@@ -1,5 +1,5 @@
 
-fit_LSM = function(B, ne, tranfu, BOOTENS, nB, true_spectra_available,
+fit_LSM = function(ENSM, tranfu, BOOTENS, nB, true_spectra_available,
                   perform_B2S, B2S_method, b_shape, lplot, 
                   B2S_bbc, niter_bbc, correc_bbc,  # prms for B2S_lines
                   moments, a_max_times, w_a_fg,    # prms for B2S_shape
@@ -15,10 +15,8 @@ fit_LSM = function(B, ne, tranfu, BOOTENS, nB, true_spectra_available,
   # 
   #   Args:
   # 
-  # B - cvm
+  # ENSM - ensemble [1:nx, 1:ne]
   # tranfu[i_n=1:nx, j=1:J] - bands' spectral transfer functions
-  #
-  #
   # BOOTENS - TRUE if the bootstrap band variances  band_Ve_B  are available
   # nB - size of the bootstrap sample to be generated
   # true_spectra_available - TRUE spectra and true band variances are provided testing
@@ -36,19 +34,11 @@ fit_LSM = function(B, ne, tranfu, BOOTENS, nB, true_spectra_available,
   # M Tsy 2023 June
   #--------------------------------------------------------------
   
-  nx = dim(B)[1]
+  nx = dim(ENSM)[1]
+  ne = dim(ENSM)[2]
   nband = dim(tranfu)[2] ;  J = nband
 
   tranfu2 = (abs(tranfu))^2 # [i_n, j=1:J]
-  
-  # Calc symm-pos-def sqrt of CVM
-  
-  sqB = symm_pd_mx_sqrt(B)$sq
-  
-  # CREATE the ENSM
-  
-  gau_mx_N01=matrix(nrow=nx, ncol=ne, data=rnorm(nx*ne))
-  ENSM=sqB %*% gau_mx_N01
   
   # Ensm sample CVM
   # Calc ensm perturbations.
@@ -61,6 +51,7 @@ fit_LSM = function(B, ne, tranfu, BOOTENS, nB, true_spectra_available,
   d_ENSM = ENSM - matrix(ENSM_Me, nrow = nx, ncol = ne)
   S = 1/(ne-1) * d_ENSM %*% t(d_ENSM)
   
+#----------------------------------------------------------------------   
   # Calc ensm band vars (and, optionally, their bootstrap versions)
   
   bandData = E2B(ENSM, tranfu, BOOTENS, nB, true_spectra_available)
@@ -197,8 +188,7 @@ fit_LSM = function(B, ne, tranfu, BOOTENS, nB, true_spectra_available,
     band_V_restored = NULL
   }
   
-  return(list(ENSM=ENSM,
-              S=S,
+  return(list(S=S,
               band_Ve=band_Ve, # [ix,j]
               b_LSM=b_LSM,
               band_V_restored=band_V_restored))
