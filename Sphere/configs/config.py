@@ -28,7 +28,7 @@ if is_Linux:
     n_max = 49
 else:
     print('working on personal computer')
-    n_max = 49
+    n_max = 19  # 49
     
 angular_distance_grid_size = n_max * 10 + 1
 my_seed_mult = 5757  # multiplicator for random seed
@@ -54,10 +54,10 @@ kappa_default: float = 2.
 mu_NSL: float = 3. # 3.
 
 L_0: float = 2500. # default length scale for lcz matrix
-        #750 #3500  #2500 for statio n_x=60  #250 for DLSM n_x=360        
+        # 750 #3500  #2500 for statio n_x=60  #250 for DLSM n_x=360
 
 SDxi_med = 1       # median of the statio fld S(x)  
-SDxi_add = SDxi_med /10 # minimal SDxi
+SDxi_add = SDxi_med / 10 # minimal SDxi
 lambda_add = dx/3    # minimal lambda(x): accounts for the grid resolution
 lambda_med = dx*3  # median lambda(x): the desired median length scale 
 gamma_add = 1.0      # minimal gamma(x): avoid too low gamma ==> weird crf
@@ -75,7 +75,7 @@ n_lon: int = (n_lat - 1) * 2
 npoints: int = n_lat * n_lon - 2 * n_lon + 2
 obs_per_grid_cell: float = 0.5
 
-obs_std_err: float = 1. # 0.5, 0.7, 1, 1.3, 1.5
+obs_std_err: float = 1.  # 0.5, 0.7, 1, 1.3, 1.5
 
 n_seeds: int = 1
 
@@ -83,9 +83,9 @@ n_training_spheres: int = 33 # for nn dataset
 n_training_spheres_B: int = 33 # for B_static
 is_nn_trained: int = 1
 
-w_smoo: float = 1e-4 # for neural network 
+w_smoo: float = 1e-4  # for neural network
 
-w_ensm_hybr: float = 0.5 #  for hybrid B_mean
+w_ensm_hybr: float = 0.5  #  for hybrid B_mean
 hybrid_type: str = 'mean' # or 'med'
 threshold_coeff: float = 0. # for sparsing matrix
 
@@ -96,7 +96,6 @@ nc2_multiplier: float = 1.5
 q_tranfu: int = 3 # 2, 3
 
 n_iterations: int = 1
-
 
 
 nn_i_multiplier = 0
@@ -139,13 +138,12 @@ n_obs: int = int(obs_per_grid_cell * npoints)
 # print(n_obs)
 if statio:
     # parameters for the processes V[x], L[x], gamma[x] such that
-    kappa_SDxi = 1.# V[x] = V*g(log(kappa_V)*WN_V(x,NS_width))
+    kappa_SDxi = 1.  # V[x] = V*g(log(kappa_V)*WN_V(x,NS_width))
     kappa_lamb = 1.  # L[x] = L_min + L*g(log(kappa_L)*WN_L(x,NS_width))
-    kappa_gamma = 1. # gamma[x] = gamma_add + gamma_mult*g(log(kappa_gamma)*WN_gamma(x,NS_width))
+    kappa_gamma = 1.  # gamma[x] = gamma_add + gamma_mult*g(log(kappa_gamma)*WN_gamma(x,NS_width))
 else:
-    kappa_SDxi = kappa_default # V[x] = V*g(log(kappa_V)*WN_V(x,NS_width))
-    kappa_lamb = kappa_default  # L[x] = L_min + 
-                                # L*g(log(kappa_L)*WN_L(x,NS_width))
+    kappa_SDxi = kappa_default  # V[x] = V*g(log(kappa_V)*WN_V(x,NS_width))
+    kappa_lamb = kappa_default  # L[x] = L_min + L*g(log(kappa_L)*WN_L(x,NS_width))
     if gamma_fixed:
         kappa_gamma = 1.
     else:

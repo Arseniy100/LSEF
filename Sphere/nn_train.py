@@ -22,7 +22,7 @@ if '/RHM-Lustre3.2/software/general/plang/Anaconda3-2019.10' in sys.path:
 else:
     is_Linux = False
     # sys.path.append(r'/RHM-Lustre3.2/users/wg-da/asotskiy/packages')
-sys.path
+# sys.path
 
 if is_Linux:
     print('working on super-computer')
@@ -60,10 +60,9 @@ from configs import (
     )
 
 
-
 from functions.tools import (
     draw_1D, find_sample_covariance_matrix, 
-     integrate_gridded_function_on_S2, _time, 
+    integrate_gridded_function_on_S2, _time,
     convert_variance_spectrum_to_modal,
     convert_modal_spectrum_to_variance
     )
@@ -138,7 +137,7 @@ print(f'made directory {path_to_save}')
 # 
 # =============================================================================
 seed = 0
-draw=True
+draw = False
 # =============================================================================
 # 
 # =============================================================================
@@ -152,7 +151,7 @@ transfer_functions, _, __ = CreateExpqBands(**expq_bands_params)
 n_bands = expq_bands_params['nband']
 
 
-bands = [Band_for_sphere(transfer_functions[:,i]) for i in range(n_bands)]
+bands = [Band_for_sphere(transfer_functions[:, i]) for i in range(n_bands)]
 print(transfer_functions.shape)
 
 modal_spectrum, lambx, gammax, Vx, cx = \
@@ -539,18 +538,21 @@ all_nets_params_grid = {
 # ============================================
 # ============================================
 #%%
+
 # !!!!!
-nets_to_train = ['net_gridded', 'net5_log', 'net_l1', 'net_l2',]
-nets_to_train = ['net_gridded_30_ep', 'net_l2_sqrt']
-nets_to_train = ['net_l2_sqrtsqrt', 'net_l2_sqrt']
-nets_to_train = []
+# nets_to_train = ['net_gridded', 'net5_log', 'net_l1', 'net_l2',]
+# nets_to_train = ['net_gridded_30_ep', 'net_l2_sqrt']
+# nets_to_train = ['net_l2_sqrtsqrt', 'net_l2_sqrt']
+nets_to_train = ['net_l2_sqrtsqrt_120']
 if not is_nn_trained:
     nets_to_train = []
     print('no training')
 
 for net_name, params in all_nets_params_grid.items():
+    print(net_name)
     if net_name not in nets_to_train:
         continue
+    print('??????')
     print(f'Training net {net_name}')
     print(f'init_params: {params.init_params}')
     print(f'fit_params: {params.fit_params}')
