@@ -117,8 +117,8 @@ with open(path_to_save + 'setup.txt', 'a') as setup_file:
 	setup_file.write(f'n_obs = {n_obs}\n')
 	setup_file.write(info)
 
-global n_png
-n_png = 0
+# global n_png
+# n_png = 0
 
 draw = False
 
@@ -387,10 +387,8 @@ for iteration in range(n_iterations):
 	# nn_predictor_anls_loss,
 	# nn_predictor_5_log
 
-	predictors_list = [NNPredictor(bands, n_max, grid, name + str(n_max),
-	                               color=colors[name]) for name in colors.keys()]
-	predictors_list_with_loc = predictors_list + \
-	                           [sample_cvm_loc_predictor, hybrid_mean_sample_predictor, ]
+	predictors_list = [NNPredictor(bands, n_max, grid, name + str(n_max), color=colors[name]) for name in colors.keys()]
+	predictors_list_with_loc = predictors_list + [sample_cvm_loc_predictor, hybrid_mean_sample_predictor]
 
 	print('making predictors - done')
 	for predictor in predictors_list:

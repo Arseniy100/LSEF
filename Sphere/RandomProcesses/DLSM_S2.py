@@ -33,7 +33,7 @@ def get_modal_spectrum_from_DLSM_params(
         mu_NSL: float, n_max: int, angular_distance_grid_size: int,
         is_cvm_to_be_converted_to_crm: bool=False, 
         draw: bool=False, seed: int=None
-        ) -> tp.Tuple[np.array]:
+        ) -> tp.Tuple:
     r'''Computes the modal spectrum with the given parameters.
     
     The variance spectrum is defined as follows:
@@ -217,11 +217,10 @@ def get_modal_spectrum_from_DLSM_params(
         draw_2D(Red_noise_realiz_lamb.data,
                 title=f'Red_noise_realiz_lamb, Gamma={Gamma}',)
                 
-    Vx = (SDxi_add + \
-          SDxi_mult * sigmoid(np.log(kappa_SDxi) * Red_noise_realiz_std_xi.data))**2
+    Vx = (SDxi_add + SDxi_mult * sigmoid(np.log(kappa_SDxi) * Red_noise_realiz_std_xi.data))**2
 
-    lambx = lambda_add + lambda_mult * sigmoid(np.log(kappa_lamb) * Red_noise_realiz_lamb.data)
-    gammax = gamma_add + gamma_mult * sigmoid(np.log(kappa_gamma) \
+    lambx: np.array = lambda_add + lambda_mult * sigmoid(np.log(kappa_lamb) * Red_noise_realiz_lamb.data)
+    gammax: np.array = gamma_add + gamma_mult * sigmoid(np.log(kappa_gamma) \
                                               * Red_noise_realiz_gamma.data)
 
     if draw:
@@ -229,8 +228,7 @@ def get_modal_spectrum_from_DLSM_params(
         draw_2D(gammax, title="$ \gamma(x)$")
         draw_2D(Vx, title="$ V(x)$")
 
-
-        print(lambx.shape)
+        # print(lambx.shape)
 
     spectrum = 1 / (1 + np.power(
         lambx[np.newaxis,:,:] * np.arange(n_max + 1)[:,np.newaxis,np.newaxis],
@@ -240,8 +238,7 @@ def get_modal_spectrum_from_DLSM_params(
     if draw:
         for n in [3]:
             draw_2D(spectrum[n], title='b_n(x), n={}'.format(n))
-    cx = 4 * np.pi * Vx / (spectrum * \
-        (2 * np.arange(n_max + 1)[:,np.newaxis,np.newaxis] + 1)).sum(axis=0)
+    cx = 4 * np.pi * Vx / (spectrum * (2 * np.arange(n_max + 1)[:,np.newaxis,np.newaxis] + 1)).sum(axis=0)
 
     spectrum = spectrum * cx
 
