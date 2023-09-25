@@ -4,8 +4,10 @@ This repo contains Python and R code that allows one to carry out numerical expe
 locally stationary convolutional ensemble filter (LSEF).
  
 The LSEF is proposed and described in the paper 
-“A locally stationary convolutional ensemble filter” by 
-Michael Tsyrulnikov and Arseniy Sotskiy 
+
+Michael Tsyrulnikov and Arseniy Sotskiy.
+“Regularization of the ensemble Kalman filter using a non-stationary spatial convolution model” 
+Revised version under review in "Spatial Statistics".
 ArXiv preprint: https://arxiv.org/pdf/2306.14318.pdf 
 
 With the code in the repo, one can reproduce results reported in the paper.
