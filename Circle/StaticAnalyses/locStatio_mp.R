@@ -1,6 +1,6 @@
 # 
 # =Generate the true local spectra 
-# =Generate the truth and the ensm -- either with PMT or taking an external KF CVMs
+# =Generate the truth and the ensm -- either with the Parametric Model of Truth (PMT) or taking an external KF CVMs
 # =Create the spectral bands of the multi-scale bandpass filter.
 # =E2B: Apply the multi-scale bandpass filter to the ensm members.
 # =B2S: From band variances, restore the whole local spectrum (at all grid points indep-ly) using LSM
@@ -10,6 +10,7 @@
 #           deterministic anls x_a. Assess the accuracy of x_a as compared w truth.
 #
 # ----------------
+# The two basic B2S techniques are  B2S_SVshape  and  B2S_NN:
 # With  B2S_SVshape, first, run with  CALIBRATE = T  and n_repl=50  
 # to calc the shape of the mean spectrum (the true median shape is the default).
 # Then, switch to  CALIBRATE = F
@@ -169,9 +170,11 @@ source('./Functions/Varia/monotSmooFit.R')
 # external prms
 
 LEARN = F                    
-B_source = "internal_PMT" # "internal_PMT"  "external_KF"  "external_EnKF" -- CVMs to generate truth & ensm                 or 
-B_source_KF_EnKF_spat_ave = T # if T: KF/EnKS's: spat-ave cvfs are handled & global (statio) spectra are used.
-                              # if F,            full CVMs are use to fit LSM & use its loc.spectra to gen.training sample
+B_source = "internal_PMT" # "internal_PMT"  "external_KF"  "external_EnKF" -- CVMs to generate truth & ensm
+if(B_source != "internal_PMT"){
+  B_source_KF_EnKF_spat_ave = T # if T: KF/EnKS's: spat-ave cvfs are handled & global (statio) spectra are used.
+                                # if F, full CVMs are use to fit LSM & use its loc.spectra to gen.training sample
+}
 nx = 120; nmax=floor(nx/2); dx=2*pi/nx # nx sh.be a highly composite number (for fft)
 ne = 10  # ensm size
 kappa = 2 # nstatio strength (NSS); =1...4;  kappa=1: statio; kappa=2 nrm
@@ -193,13 +196,13 @@ w_ensm_hybr = 0.5 # weight in  B_hybr = w_ensm_hybr*S_lcz + (1-w_ensm_hybr)*B_st
 # PMT
 
 SDxi_med = 5       # median of the statio fld S(x)  
-SDxi_add = SDxi_med /100 # minimal SDxi
-lambda_med = dx*6 # dx*1 dx*3  # median lambda(x): the desired median length scale 
-lambda_add = dx/2 # /10# dx/3    # minimal lambda(x): accounts for the grid resolution
-Lambda_preTransform = lambda_med * NSL # pre-transform (statio) len scale
-gamma_add = 1.0      # minimal gamma(x): avoid too low gamma ==> weird crf, non-convergent spectrum
-gamma_med = 1.5    # S1: 3.0 yields almost AR2 cvf (S2: gamma=3.1 yields AR2), =4: S2 default
-Gamma_preTransform   = 3 # for lambda & gamma chi flds
+SDxi_add = SDxi_med /10 # /10 minimal SDxi
+lambda_med = dx*3 # dx*3  # median lambda(x): the desired median length scale 
+lambda_add = dx/3 # dx/3    # minimal lambda(x): accounts for the grid resolution
+  Lambda_preTransform = lambda_med * NSL # pre-transform (statio) len scale
+gamma_add = 1.0      # 1 minimal gamma(x): avoid too low gamma ==> weird crf, non-convergent spectrum
+gamma_med = 3    # S1: 3.0 yields almost AR2 cvf (S2: gamma=3.1 yields AR2), =3: S1 default, =4: S2 default
+Gamma_preTransform   = 3 # 3 for lambda & gamma chi flds
 
 # Fit a time-mean spectral shape to the local spectrum -- prms
 
@@ -254,7 +257,7 @@ if(B2S_method == "PARAM" ){
 }
 
 rel_W_threshold = 1e-5 # threshold W
-glob_loc_thresholding = 1
+glob_loc_thresholding = 1  # 1: global (max of whole mx),  =2: local thresholding (max of current mx row)
 
 BOOTENS = F # T F bootstrap the ensm?
 nB = 21 # Bootstrap-sample size. ODD if median is to be within the sample
@@ -285,11 +288,11 @@ obs_err_variance = (SDxi_med * sd_obs_rel_FG)^2 # NB: SDxi_med^2 is not exactly 
 repeated_obs_location = T # F or T allow several obs to be located at the same grid point?
 uniform_obs_cover = F # F nrm
 
-seed = 154
+seed = 14654
 # seed=seed+10
 set.seed(seed)  # fix start seed
 
-n_repl = 50 # only for verif anls (nx=120: set =200). LEARN=T & "internal_PMT" ==> n_repl is set just below 
+n_repl = 300 # only for verif anls (nx=120: set =200). LEARN=T & "internal_PMT" ==> n_repl is set just below 
 
 message("n_repl=", n_repl)
 
@@ -694,6 +697,7 @@ if(LEARN){
 xi_Vt_Ms = c(1:n_repl)
 xi_Ve_Ms = c(1:n_repl)
 xi_Ve_AEs = c(1:n_repl)
+xi_V_LSM_AEs = c(1:n_repl)
 xi_Ve_TAD_Ms = c(1:n_repl)
 
 n_repl_CC = 50
@@ -899,9 +903,9 @@ if(B_source != "internal_PMT"){
     }
   }    
 }
+Cv = Cov2VarCor(B)
+C = Cv$C                                                
 if(i_repl <= n_repl_CC){
-  Cv = Cov2VarCor(B)
-  C = Cv$C
   CC[,,i_repl] = C
 } 
 #-----------------------------------------------------                                               
@@ -960,9 +964,11 @@ LSM = fit_LSM(ENSM, tranfu, BOOTENS, nB, true_spectra_available,
 S       = LSM$S
 band_Ve = LSM$band_Ve
 
-if(!LEARN) b_LSM           = LSM$b_LSM
-if(!LEARN) band_V_restored = LSM$band_V_restored
-
+if(!LEARN) {
+  b_LSM           = LSM$b_LSM
+  band_V_restored = LSM$band_V_restored
+  xi_V_LSM = apply(b_LSM, 1, sum) # LSM variance at all x
+}
 #-----------------------------------------------------------------------
 #-----------------------------------------------------------------------
 # Ensm variance. Always subtract ensm mean
@@ -973,6 +979,9 @@ xi_Ve_Ms[i_repl]  = mean(xi_Ve)
 if(true_spectra_available){
   xi_VeE = xi_Ve - xi_Vt  # error in xi_Ve
   xi_Ve_AEs[i_repl] = ExAbs(xi_VeE)
+  
+  xi_V_LSM_E = xi_V_LSM - xi_Vt  # error in xi_Ve
+  xi_V_LSM_AEs[i_repl] = ExAbs(xi_V_LSM_E)
 }
 
 # theoretical estm of SD(S).
@@ -982,26 +991,58 @@ xi_Ve_TD = xi_Ve * sqrt(2/(ne-1)) # theor SD(xi_Ve)
 xi_Ve_TAD = xi_Ve_TD * md2sd_chi2
 xi_Ve_TAD_Ms[i_repl] = mean(xi_Ve_TAD)  
 
-if(i_repl == 1 & true_spectra_available){
-  xi_Ve_upp = xi_Ve + xi_Ve_TD
-  xi_Ve_low = xi_Ve - xi_Ve_TD
-  xi_Ve_low[xi_Ve_low<0] = 0
-  
-  mx=max(max(xi_Ve, xi_Vt, xi_Ve_upp, xi_Ve_low))
-  mn=0
-  namefile=paste0("./Out/TrueEnsmVars_ne",ne, "ne", ne, "kap", kappa, "NSL", NSL,".png")
-  png(namefile, width=7.48, height=5.47, units = "in", res=300)
-  par(mgp=c(2.5, 1, 0))
-  plot(xi_Vt, type="l", main=paste0("True variance Vt, ensm variance Ve (red), Ve +- SD (grn)"), 
-       ylim=c(mn,mx), xlab="Grid point", ylab = "Variance",
-       sub=paste0("xi_Vt_Ms=", signif(xi_Vt_Ms[i_repl],4), "   xi_Ve_Ms=", signif(xi_Ve_Ms[i_repl],4)))
-  lines(xi_Ve, col="red")
-  lines(xi_Ve_low, type="l", col="green", lty=3)
-  lines(xi_Ve_upp, type="l", col="green", lty=3)
-  abline(h=0, lty=3)
-  dev.off()
-}
+#--------------------------------------------------------------------------------
+# Variances: true, sample, & LSM: plots
 
+store_multiple_var_crl_plots = F
+if(store_multiple_var_crl_plots  & i_repl == 1 & true_spectra_available){ # replace == by >=  and
+                                          # set store_multiple_var_crl_plots=T 
+                                          #if you wish to store multiple plots
+                                          # BUT! Before that, run the script with large n_repl=300 or so
+                                          # to get  ratio_large_sample  and  xi_V_LSM_AEsr  
+                                          # needed below.
+  # xi_Ve_upp = xi_Ve + xi_Ve_TD
+  # xi_Ve_low = xi_Ve - xi_Ve_TD
+  # xi_Ve_low[xi_Ve_low<0] = 0
+  
+  # counter=1 # initialize & then comment if you wish to store multiple plots
+  
+  greenish = rgb(0,0.7,0)
+  
+  ratio_large_sample = xi_Ve_AEsr / xi_V_LSM_AEsr
+  ratio = ExAbs(xi_Ve - xi_Vt) / ExAbs(xi_V_LSM - xi_Vt) 
+
+  if( abs(ratio - ratio_large_sample) < 0.1  &  
+     abs(xi_V_LSM_AEs[i_repl] - xi_V_LSM_AEsr) < 0.1*xi_V_LSM_AEsr ){  # a "typical" sample
+    mx=max(max(xi_Ve, xi_Vt, xi_V_LSM))
+    mn=0
+    namefile=paste0("./Out/PointVars_ne",ne, "ne", ne, "kap", kappa, "NSL", NSL,
+                    "_", counter, ".png")
+    png(namefile, width=7.48, height=5.47, units = "in", res=300)
+    par(mgp=c(2.5, 1, 0))
+    plot(xi_Vt, type="p",  pch = 8, cex=0.5,
+         cex.lab=1.3, cex.axis=1.2, cex.main = 1.3,
+         main=paste0("Variances \nMAE(sample - truth)=", signif(ExAbs(xi_Ve-xi_Vt),3),
+                     "\nMAE(model - truth)=", signif(ExAbs(xi_V_LSM-xi_Vt),3)), 
+         ylim=c(mn,mx), xlab="Grid point", ylab = "Variance")
+    # sub=paste0("xi_Vt_Ms=", signif(xi_Vt_Ms[i_repl],4), "   xi_Ve_Ms=", signif(xi_Ve_Ms[i_repl],4)))
+    lines(xi_Ve, col=greenish, lwd=2, lty =3)
+    lines(xi_V_LSM, col="purple", lwd=2, lty =1)
+    # lines(xi_Ve_low, type="l", col="green", lty=3)
+    # lines(xi_Ve_upp, type="l", col="green", lty=3)
+    
+    leg.txt<-c('Truth', 'Sample', 'Model')
+    leg.col<-c("black", greenish, "purple")
+    legend("topright", inset=0, leg.txt, col=leg.col, 
+           lwd=c(NA,2,2), lty=c(NA,3,1), pch=c(8,NA,NA),
+           cex=1.3, pt.cex=0.5, bg="white")
+    abline(h=0, lty=3)
+    dev.off()
+    
+    counter=counter+1
+  }
+}
+#--------------------------------------------------------------------------------
 # Localized S
 
 S_lcz = S * C_lcz
@@ -1022,7 +1063,7 @@ B_hybr = w_ensm_hybr*S_lcz + (1-w_ensm_hybr)*B_static
 
 #----------------------------------------------------------------------
 #----------------------------------------------------------------------
-#                      BAND-SPACE section
+#                      BAND-SPACE stats
 #--------------------------------------------------------------
 # Calc TRUE band variances from Sigma[ix, i_n], 
 
@@ -1102,6 +1143,7 @@ if(n_repl == 1 & true_spectra_available){
   image2D(x=ii_x, y=c(1:j), z=band_Ve[,1:j], main=paste0("band_Ve"), 
           zlim=c(0,mx), xlab = "Grid point", ylab = "Band")
   
+  band_Ve_Ms = apply(band_Ve, 2, mean)
   nb=nband
   mx=max(band_Ve_Ms[1:nb], band_Vt_Ms[1:nb])
   plot(band_Vt_Ms[1:nb], main="band_V_Ms: true & ensm (red)\n TMD_Ms (grn)", xlab="band", ylim=c(0,mx))
@@ -1311,6 +1353,12 @@ WB = Sigma2WB(Sigma_LSM)
 B_LSM = WB$B
 W_LSM = WB$W
 
+C_LSM  = Cov2VarCor(B_LSM)$C
+
+if(i_repl <= n_repl_CC) CC_LSM[,,i_repl] = C_LSM
+
+CS_lcz = Cov2VarCor(S_lcz)$C
+
 #------------------------------------
 # Thresholding W_LSM
 
@@ -1420,7 +1468,7 @@ if(n_repl == 1 & true_spectra_available){
 }
 
 if(n_repl == 1){
-  d=nx/8
+  d=nx/4
   ix=sample(c((d+1):(nx-d)),1)
   # ix=(ix+2) %% nx
   mx=max( max(B[ix, (ix-d):(ix + d)]), max((S_lcz[ix, (ix-d):(ix + d)])), max((B_LSM[ix, (ix-d):(ix + d)])) )
@@ -1473,14 +1521,15 @@ if(i_repl %% 10 == 1){
 #------------------------------
 # Biases & MAEs in the CRMs/CVMs
 
-C_LSM  = Cov2VarCor(B_LSM)$C
-
-if(i_repl <= n_repl_CC) CC_LSM[,,i_repl] = C_LSM
-
-CS_lcz = Cov2VarCor(S_lcz)$C
-
 # Align C, CS_lcz, C_LSM  so that the main diagonal 
 # becomes vertical and stands in the middle on the plot (at ix=nmax=nx/2)
+
+nx_mid = round(nx/2)
+Dx_align=floor(L_xi_median *10 / dx)
+if(Dx_align >= nx/2) Dx_align = floor(nx/2)-1
+nx1_align=nx_mid - Dx_align
+nx2_align=nx_mid + Dx_align
+xx_align = c(0:Dx_align) * dx_km
 
 aligned_C = C  # init
 aligned_C_LSM = C_LSM  # init
@@ -1580,7 +1629,63 @@ for (ix in 1:nx){
 }
 nn_nmon[i_repl] = sum(n_nmon)
 
-#---------------------
+#--------------------------------------------------------------------------------
+# Crl: true, sample, & LSM: plots
+
+store_multiple_var_crl_plots = F
+if(store_multiple_var_crl_plots & i_repl == 1 & true_spectra_available){# replace == by >=  and
+                                   # set store_multiple_var_crl_plots=T 
+                                   #if you wish to store multiple plots
+                                   # BUT! Before that, run the script with large n_repl=300 or so
+                                   # to get  ratio_large_sample  and  xi_V_LSM_AEsr  
+                                   # needed below.
+  
+  # counter=1 # initialize & then comment if you wish to store multiple plots
+  
+  greenish = rgb(0,0.7,0)
+  
+  ratio_global = MAE_crl_S_lcz / MAE_crl_LSM
+  
+  #distances for plotting
+  ddist = c((-Dx_align:-1), 0, (1:Dx_align))
+  
+  for (ix in seq(from=1, to=nx, by=10)){
+    mx=max( aligned_C[ix, nx1_align:nx2_align], aligned_CS_lcz[ix, nx1_align:nx2_align], aligned_C_LSM[ix, nx1_align:nx2_align] )
+    mn=min( aligned_C[ix, nx1_align:nx2_align], aligned_CS_lcz[ix, nx1_align:nx2_align], aligned_C_LSM[ix, nx1_align:nx2_align] )
+    if(mn > 0) mn=0
+    
+    MAE_crl_LSM_local   = ExAbs(  aligned_C_LSM[ix, nx1_align:nx2_align] - aligned_C[ix, nx1_align:nx2_align] )
+    MAE_crl_S_lcz_local = ExAbs( aligned_CS_lcz[ix, nx1_align:nx2_align] - aligned_C[ix, nx1_align:nx2_align] )
+    ratio_local = MAE_crl_S_lcz_local / MAE_crl_LSM_local
+    
+    if( abs(ratio_local - ratio_global) < 0.1 & 
+        abs(MAE_crl_LSM_local - MAE_crl_LSM)/MAE_crl_LSM <0.1 ){  # "typical" correlations
+      namefile=paste0("./Out/Crls_ne",ne, "ne", ne, "kap", kappa, "NSL", NSL,
+                      "_", counter, ".png")
+      png(namefile, width=7.48, height=5.47, units = "in", res=300)
+      par(mgp=c(2.5, 1, 0))
+      plot(x=ddist, y=aligned_C[ix, nx1_align:nx2_align], type="p",  pch = 8, cex=0.5,
+           xlab = "Distance with sign, mesh sizes",
+           cex.lab=1.3, cex.axis=1.2,  cex.main=1.3,
+           main=paste0("Correlations \nMAE(taperedSample - truth)=", signif(MAE_crl_S_lcz_local,2),
+                       "\nMAE(model - truth)=", signif(MAE_crl_LSM_local,2)), 
+           ylim=c(mn,mx), ylab = "Correlation")
+      lines(x=ddist, y=aligned_CS_lcz[ix, nx1_align:nx2_align], col=greenish, lwd=2, lty =3)
+      lines(x=ddist, y=aligned_C_LSM [ix, nx1_align:nx2_align], col="purple", lwd=2, lty =1)
+      
+      leg.txt<-c('Truth', 'Sample', 'Model')
+      leg.col<-c("black", greenish, "purple")
+      legend("topright", inset=0, leg.txt, col=leg.col, 
+             lwd=c(NA,2,2), lty=c(NA,3,1), pch=c(8,NA,NA),
+             cex=1.3, pt.cex=0.5, bg="white")
+      abline(h=0, lty=3)
+      dev.off()
+      
+      counter=counter+1
+    }
+  }
+}
+#--------------------------------------------------------------------------------
 # Matrix err norms
 
 err_Frob_LSM[i_repl]   = norm(B_LSM-B, type = "F") / norm(B, type = "F") 
@@ -1869,8 +1974,8 @@ if(LEARN){
       
       optimizer$zero_grad()
       
-      ff = y_train_torch[ind,]      # f = truth
-      gg = NN(x_train_torch[ind,])  # g = y_train_pred_torch
+      ff =    y_train_torch[ind,]   # f = truth (verification, target)
+      gg = NN(x_train_torch[ind,])  # g = y_train_pred_torch (model prediction)
       
       if(loss_type == "L2"){
         loss = L2LossFunction(ff, gg)   
@@ -1892,7 +1997,8 @@ if(LEARN){
         mx=max(y_true, y_pred)
         mn=min(y_true, y_pred)
         plot(y_true, type = "l",
-             main=paste0("y, pred(red), loss=", signif(as.numeric(loss),3)), ylim=c(mn,mx))
+             main=paste0("y, pred(red), loss=", signif(as.numeric(loss),3)), ylim=c(mn,mx), xlab="",
+             sub = "NB: loss is for the whole minibatch, \nnot for the displayed case")
         lines(y_pred, col="red")
         abline(h=0)
       }
@@ -1988,6 +2094,7 @@ xi_Vt_Msr = mean(xi_Vt_Ms)
 xi_Ve_Msr = mean(xi_Ve_Ms)
 
 xi_Ve_AEsr   = mean(xi_Ve_AEs) 
+xi_V_LSM_AEsr = mean(xi_V_LSM_AEs)
 xi_Ve_TAD_Msr = mean(xi_Ve_TAD_Ms) 
 
 i_repl=sample(1:n_repl_CC,1)
@@ -2229,24 +2336,17 @@ RelMAE_Diag_S_lcz = sqrt(mean(RelMSE_Diag_S_lcz))
 nonmonot_crl_points_per_i_repl = sum(nn_nmon) / n_repl
 
 # Aligned crfs
-
-nx_mid = round(nx/2)
-Dx_align=floor(L_xi_median *10 / dx)
-if(Dx_align >= nx/2) Dx_align = floor(nx/2)-1
-nx2_align=nx_mid + Dx_align
-xx_align = c(0:Dx_align) * dx_km
-
 # CRL Bias & MAE -- averaged over the plotted range of distances 
 
-bias_crl_LSM   = mean(aligned_C_LSM_MEs_Mr[nx_mid:nx2_align])
-bias_crl_S_lcz = mean(aligned_CS_lcz_MEs_Mr[nx_mid:nx2_align])
+bias_crl_LSM   = mean(aligned_C_LSM_MEs_Mr[nx1_align:nx2_align])
+bias_crl_S_lcz = mean(aligned_CS_lcz_MEs_Mr[nx1_align:nx2_align])
 
-MAE_crl_LSM   = mean(aligned_C_LSM_AEs_Mr[nx_mid:nx2_align])
-MAE_crl_S_lcz = mean(aligned_CS_lcz_AEs_Mr[nx_mid:nx2_align])
+MAE_crl_LSM   = mean(aligned_C_LSM_AEs_Mr[nx1_align:nx2_align])
+MAE_crl_S_lcz = mean(aligned_CS_lcz_AEs_Mr[nx1_align:nx2_align])
 
 
-mn=min(aligned_C_Ms_Mr[nx_mid:nx2_align], aligned_C_LSM_MEs_Mr[nx_mid:nx2_align], aligned_CS_lcz_MEs_Mr[nx_mid:nx2_align])
-mx=max(aligned_C_Ms_Mr[nx_mid:nx2_align], aligned_C_LSM_MEs_Mr[nx_mid:nx2_align], aligned_CS_lcz_MEs_Mr[nx_mid:nx2_align])
+mn=min(aligned_C_Ms_Mr[nx1_align:nx2_align], aligned_C_LSM_MEs_Mr[nx1_align:nx2_align], aligned_CS_lcz_MEs_Mr[nx1_align:nx2_align])
+mx=max(aligned_C_Ms_Mr[nx1_align:nx2_align], aligned_C_LSM_MEs_Mr[nx1_align:nx2_align], aligned_CS_lcz_MEs_Mr[nx1_align:nx2_align])
 
 if(l_CRL_COV_plots == 1){
   namefile=paste0("./Out/CrlErr_", "u", crftype, "_B2S_", B2S_method, "_ne", ne, "nr", n_repl, "kapp", kappa, 
@@ -2295,7 +2395,8 @@ dev.off()
 #-------------------------------------------------------------------
 #-------------------------------------------------------------------
 
-message("Sample MAE(xi_Ve) = ", signif(xi_Ve_AEsr,5), 
+message("Sample var MAE = ", signif(xi_Ve_AEsr,5), 
+        "  LSM var MAE = ", signif(xi_V_LSM_AEsr,5),
         "  Theor MD(xi_Ve) = ", signif(xi_Ve_TAD_Msr,5), 
         " (need be really close in STATIO only)")
 
