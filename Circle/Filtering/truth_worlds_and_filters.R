@@ -934,10 +934,16 @@ truth_worlds_and_filters = function(seed){
       HHBEF_fRMSE[i_HBEF]  = rmse(HHBEF_res$XXf[,], X_true[,])
       message("i_HBEF=", i_HBEF, " HHBEF_fRMSE=", signif(HHBEF_fRMSE[i_HBEF],4))
       
+      S_mean = HHBEF_res$S_mean
+      
+      # mean fc spread
+      
+      spread = sqrt( mean(diag(S_mean)) )
+      message("i_HBEF=", i_HBEF, " spread=", signif(spread,3))
+      
       if(i_HBEF == i_HBEF_EnKF){
         spat_ave_cvfs_EnKF = HHBEF_res$spat_ave_cvfs 
         EE = HHBEF_res$EE
-        S_mean = HHBEF_res$S_mean
         
         # Calc  b_shape_EnKF  from  S_mean
         
@@ -1039,6 +1045,13 @@ truth_worlds_and_filters = function(seed){
     
     LSEF_fRMSE  = rmse(LSEF_res$XXf[,], X_true[,])
     message("LSEF_fRMSE=", signif(LSEF_fRMSE, 4))
+    
+    S_mean = HHBEF_res$S_mean
+    
+    # mean fc spread
+    
+    spread = sqrt( mean(diag(S_mean)) )
+    message("LSEF spread=", signif(spread,3))
     
     LSEF_one_world = LSEF_res
     
