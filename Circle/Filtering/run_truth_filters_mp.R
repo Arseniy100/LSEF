@@ -13,9 +13,6 @@ setup <- read.table('./setup.txt', sep = ';')
 n_realiz = setup[setup$V1 == "n_realiz", 2]
 seed     = setup[setup$V1 == "seed",     2]
 
-n_realiz
-seed
-
 TRUTH_RMSE  = c(1:n_realiz)
 KF_fRMSE    = c(1:n_realiz)
 Var_fRMSE   = c(1:n_realiz)
@@ -92,10 +89,10 @@ if(n_realiz > 1 & max(KF_fRMSE) > 0){
   low_bounds =bounds[1,]
   upp_bounds =bounds[2,]
   
-  for(i_flt in 1:n_flt_exam){
-    message("i_flt=", i_flt, " low_bound = ", signif(low_bounds[i_flt], 4), 
-            " upp_bound = ", signif(upp_bounds[i_flt],4))
-  }
+  # for(i_flt in 1:n_flt_exam){
+  #   message("i_flt=", i_flt, " low_bound = ", signif(low_bounds[i_flt], 4), 
+  #           " upp_bound = ", signif(upp_bounds[i_flt],4))
+  # }
   
   message("Bounds")
   print(low_bounds)
