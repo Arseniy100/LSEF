@@ -363,7 +363,7 @@ B2S_SVshape = function(band_V, Omega_S1, SVD_Omega_S1,
          ylim=c(mn,mx), xlab="n+1", lwd=2)
     lines(b_svd[ix,1:inm], col="gold", lwd=1)
     lines(b_fit[ix,1:inm], col="red", lwd=2)
-    lines(x=band_centers_n, y=band_V[ix,]/10)
+    if(!is.null(band_centers_n)) lines(x=band_centers_n, y=band_V[ix,]/10)
     
     # if(BOOTENS){
     #   for(iB in 1:nB){
