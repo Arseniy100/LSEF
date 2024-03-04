@@ -1,6 +1,6 @@
-# 
 # =Generate the true local spectra 
-# =Generate the truth and the ensm -- either with the Parametric Model of Truth (PMT) or taking an external KF CVMs
+# =Generate the truth and the ensm -- either with the Parametric Model of Truth (PMT) or 
+#  taking an external EnkF or KF CVMs
 # =Create the spectral bands of the multi-scale bandpass filter.
 # =E2B: Apply the multi-scale bandpass filter to the ensm members.
 # =B2S: From band variances, restore the whole local spectrum (at all grid points indep-ly) using LSM
@@ -12,9 +12,9 @@
 # ----------------
 # The two basic B2S techniques are  B2S_SVshape  and  B2S_NN:
 # With  B2S_SVshape, first, run with  CALIBRATE = T  and n_repl=50  
-# to calc the shape of the mean spectrum (the true median shape is the default).
+# to calc the shape of the mean spectrum 
+# (the true median shape is the default used w/o running CALIBRATE = T).
 # Then, switch to  CALIBRATE = F
-# (otherwise, the true spectral shape is used)
 # 
 # With  B2S_NN:
 #  if LEARN = T, run the code with n_repl=50000 to estm weights of the neural network.
@@ -34,7 +34,7 @@
 # The way KF/EnKF output data are used here depends on the prm  B_source_KF_EnKF_spat_ave:
 # 
 # (3) B_source_KF_EnKF_spat_ave:
-#  if B_source_KF_EnKF_spat_ave=T, then STATIO space-averaged cvfs are used 
+#  if B_source_KF_EnKF_spat_ave=T, then spatially-STATIO (but time varying) space-averaged cvfs are used 
 #    (computed at a number of time instants during KF/EnKF filtering)
 #    --- both for learning and computing verifying analyses.
 #    
@@ -107,7 +107,9 @@ source('./Functions/Anls/gen_obs.R')
 source('./Functions/Anls/lin_determ_anls.R')
 
 source('./Functions/B2S/AEV_loss.R')
-source('./Functions/B2S/L2_loss_custom.R')
+source('./Functions/B2S/AEV_deviance_S1.R')
+source('./Functions/B2S/AEV_deviance_S1_sample.R')
+source('./Functions/B2S/bmeanBand_intpl.R')
 source('./Functions/B2S/B2S_lines.R')
 source('./Functions/B2S/B2S_monot.R')
 source('./Functions/B2S/B2S_param.R')
@@ -115,13 +117,12 @@ source('./Functions/B2S/B2S_prmFitAnlsErr.R')
 source('./Functions/B2S/B2S_shape.R')
 source('./Functions/B2S/B2S_NN.R')
 source('./Functions/B2S/B2S_SVshape.R')
-source('./Functions/B2S/AEV_deviance_S1.R')
-source('./Functions/B2S/AEV_deviance_S1_sample.R')
-source('./Functions/B2S/bmeanBand_intpl.R')
+source('./Functions/B2S/L2_loss_custom.R')
+source('./Functions/B2S/NmonotSpec.R')
 source('./Functions/B2S/spe_misfitAnlsErr.R')
 source('./Functions/B2S/V_prm_misfit.R')
 source('./Functions/B2S/varfu.R')
-source('./Functions/B2S/NmonotSpec.R')
+source('./Functions/B2S/wL2_loss.R')
 
 source('./Functions/B2S/TransformSpectrum.R')
 
@@ -169,29 +170,56 @@ source('./Functions/Varia/monotSmooFit.R')
 #--------------------------------------------------------------
 # external prms
 
-LEARN = F                    
-B_source = "internal_PMT" # "internal_PMT"  "external_KF"  "external_EnKF" -- CVMs to generate truth & ensm
+LEARN = T
+B_source = "external_EnKF" # "internal_PMT"  "external_KF"  "external_EnKF" -- CVMs to generate truth & ensm
 if(B_source != "internal_PMT"){
   B_source_KF_EnKF_spat_ave = T # if T: KF/EnKS's: spat-ave cvfs are handled & global (statio) spectra are used.
                                 # if F, full CVMs are use to fit LSM & use its loc.spectra to gen.training sample
 }
 nx = 120; nmax=floor(nx/2); dx=2*pi/nx # nx sh.be a highly composite number (for fft)
-ne = 10  # ensm size
+ne = 160  # ensm size
 kappa = 2 # nstatio strength (NSS); =1...4;  kappa=1: statio; kappa=2 nrm
 NSL = 3 # Non-stationarity Length (relative to L_xi). NSL=3 nrm
 
-J=6 ; nband=J # nu of bands (6 nrm)
+J=8 ; nband=J # nu of bands (6--10 nrm)
 B2S_method = "NN" # SVshape NN LINSHAPE LINES PARAM 
-NN_pretrained = T # set =T if a pretrained NN is available 
 
 # Bands tuning
 bandWidth_mult = 1 # multiplier for all bands' halfwidths (default 1)
 nc2_mult = 1 # multiplier for nc2 (2nd band's tranfu-maximum wvn-location) (default 1)
 
-# Hybridization of mean/median cvm with S_lcz
+# BANDS' prms
 
-static_B_mean_median = 2 # static B =1: mean, =2: ``median'' (opt 2!)
-w_ensm_hybr = 0.5 # weight in  B_hybr = w_ensm_hybr*S_lcz + (1-w_ensm_hybr)*B_static (opt 0.5)
+q_tranfu=2 # tranfu=exp(-|(n-nc)/halfwidth|^q_tranfu)) 2, 3 nrm
+if(q_tranfu >= 2){
+  nc2=                nc2_mult * nx/20           # 360:/40                
+  halfwidth_min=bandWidth_mult * nx/50 # 360:/50
+  halfwidth_max=bandWidth_mult * nx/5  # 360:/5 
+  
+  if(nx == 120){
+    nc2=                nc2_mult * 2           # 360:/40                 
+    halfwidth_min=bandWidth_mult * 12.0 # ne5: =5 ne80: = 10
+    halfwidth_max=bandWidth_mult * 12.0 # ne5: =7 ne80: = 10
+    moments = "01"
+  }
+  if(nx == 60){
+    nc2=                nc2_mult * 3           # 360:/40                 
+    halfwidth_min=bandWidth_mult * 2.0 # 360:/50
+    halfwidth_max=bandWidth_mult * 20  # 360:/5 
+    moments = "01"
+  }
+} else if(q_tranfu == 1.5){
+  nc2=                nc2_mult * 2           # 360:/40                 
+  halfwidth_min=bandWidth_mult * 10.0 # 360:/50
+  halfwidth_max=bandWidth_mult * 10  # 360:/5 
+  moments = "01"
+  
+} else if(q_tranfu == 1){
+  nc2=                nc2_mult * 2           # 360:/40                 
+  halfwidth_min=bandWidth_mult * 10.0 # 360:/50
+  halfwidth_max=bandWidth_mult * 12  # 360:/5 
+  moments = "01"
+}
 
 # PMT
 
@@ -199,7 +227,7 @@ SDxi_med = 5       # median of the statio fld S(x)
 SDxi_add = SDxi_med /10 # /10 minimal SDxi
 lambda_med = dx*3 # dx*3  # median lambda(x): the desired median length scale 
 lambda_add = dx/3 # dx/3    # minimal lambda(x): accounts for the grid resolution
-  Lambda_preTransform = lambda_med * NSL # pre-transform (statio) len scale
+Lambda_preTransform = lambda_med * NSL # pre-transform (statio) len scale
 gamma_add = 1.0      # 1 minimal gamma(x): avoid too low gamma ==> weird crf, non-convergent spectrum
 gamma_med = 3    # S1: 3.0 yields almost AR2 cvf (S2: gamma=3.1 yields AR2), =3: S1 default, =4: S2 default
 Gamma_preTransform   = 3 # 3 for lambda & gamma chi flds
@@ -210,24 +238,12 @@ moments = "012" # : use "01" , "12" , "012"
 a_max_times = 5e3 # max deviation of the scale multiplier  a  from 1 in times 
 w_a_fg = 0.0  #  weight of the ||a-1||^2 weak constraint in fitScaleMagn
 
-# BANDS' prms
-
-q_tranfu=3 # tranfu=exp(-|(n-nc)/halfwidth|^q_tranfu)) 2, 3 nrm
-halfwidth_min=bandWidth_mult * nx/50 # 360:/50
-nc2=                nc2_mult * nx/40           # 360:/40                 
-halfwidth_max=bandWidth_mult * nx/5  # 360:/5 
-
-if(nx == 60){
-  halfwidth_min=bandWidth_mult * 2.5 # 360:/50
-  nc2=                nc2_mult * 4.5           # 360:/40                 
-  halfwidth_max=bandWidth_mult * 20  # 360:/5 
-  moments = "01"
-}
-
 # B2S prms
 
 if(B2S_method == "NN" | LEARN == T){
-  loss_type = "L2"  # "L2"  "AEV"
+  loss_type = "L2"  # "L2"  "AEV" "wL2" .NB: wL2 is not bett than L2 
+  w0 = 3   # for wL2_loss
+  nw1 = 10 # for wL2_loss
   
   if(loss_type == "AEV"){
     TransformSpectrum_type_y = "sqrt" # "none" "log" "sqrt" "pow" "RELU"
@@ -256,6 +272,13 @@ if(B2S_method == "PARAM" ){
   w_a_rglrz = 10 # weight, penalize deviations of  a  from  a_fg=1
 }
 
+# Hybridization of mean/median cvm with S_lcz
+
+static_B_mean_median = 2 # static B =1: mean, =2: ``median'' (opt 2!)
+w_ensm_hybr = 0.5 # weight in  B_hybr = w_ensm_hybr*S_lcz + (1-w_ensm_hybr)*B_static (opt 0.5)
+
+# Anls: W thresholding
+
 rel_W_threshold = 1e-5 # threshold W
 glob_loc_thresholding = 1  # 1: global (max of whole mx),  =2: local thresholding (max of current mx row)
 
@@ -265,14 +288,16 @@ nB = 21 # Bootstrap-sample size. ODD if median is to be within the sample
 if(LEARN){                 # train the NN
   message("NN learning mode")
   message("(Skip B2S & ANLS)")
-  epochs = 200 # 50-200 epochs optim with 2500 minibatch size
+  if(B_source == "internal_PMT") epochs = 100 # 50-200 epochs optim with 2500 minibatch size
+  if(B_source != "internal_PMT" & B_source_KF_EnKF_spat_ave) epochs = 300 
   minibatch_size = 2500  # 2500 optim with 30-40 epochs
-  
 }                          # Read a pre-trained NN from a file 
-if(B2S_method == "NN"){
-  if(!LEARN | ( B_source != "internal_PMT" & NN_pretrained )){ 
+
+if(B2S_method == "NN" & !LEARN & B_source == "internal_PMT"){ 
     NN = torch_load("NN.pt")
-  }
+}
+if(B2S_method == "NN" & LEARN & B_source != "internal_PMT" & !B_source_KF_EnKF_spat_ave){
+    NN = torch_load("NN.pt")
 }
 
 CALIBRATE = F # if TRUE, calc only the n_repl-averaged b_shape_estm[n]
@@ -288,13 +313,13 @@ obs_err_variance = (SDxi_med * sd_obs_rel_FG)^2 # NB: SDxi_med^2 is not exactly 
 repeated_obs_location = T # F or T allow several obs to be located at the same grid point?
 uniform_obs_cover = F # F nrm
 
-seed = 14654
+seed = 144
 # seed=seed+10
 set.seed(seed)  # fix start seed
 
-n_repl = 300 # only for verif anls (nx=120: set =200). LEARN=T & "internal_PMT" ==> n_repl is set just below 
+n_repl = 400 # only for verif anls (nx=120: set =200). LEARN=T & "internal_PMT" ==> n_repl is set just below 
 
-message("n_repl=", n_repl)
+if(!LEARN) message("n_repl=", n_repl)
 
 # Plotting
 l_CRL_COV_plots = 1 # 1 - spat crl, 2 - covar
@@ -493,7 +518,8 @@ if(B_source == "internal_PMT"){ # PMT: Median and pre-transform W, B, Sigma, spe
 # Read  B or EE from an external source: KF or EnKF.
 # B will be used to compute the truth and the ensm
 # If, in addition, LEARN=T, then LOCAL SPECTRA  b_true  are needed.
-# This are estimated in the loop over n_repl below --- by fitting LSM
+# These are estimated in the loop over n_repl below --- 
+#  by fitting LSM or by taking spat-ave EnKF covs
 
   if(B_source == "external_KF"){
     load(file="KF_data.RData", verbose = TRUE) # loads  KF_data
@@ -518,6 +544,14 @@ if(B_source == "internal_PMT"){ # PMT: Median and pre-transform W, B, Sigma, spe
   } # end load Kf, EnKF data
   
   
+  # spat_ave_crfs_KF_EnKF = apply(spat_ave_cvfs_KF_EnKF, 2, function(t) t/t[1] )
+  
+  # it=100
+  # it=it+100
+  # plot(spat_ave_cvfs_KF_EnKF[1:nmaxp1,it])
+  # it100=it*100
+  # image2D(spat_ave_crfs_KF_EnKF[1:nmaxp1,it100:(it100+100)])
+  # 
   # KF or ENKF:
   
   nx_KF_EnKF = dim(spat_ave_cvfs_KF_EnKF)[1]
@@ -532,7 +566,7 @@ if(B_source == "internal_PMT"){ # PMT: Median and pre-transform W, B, Sigma, spe
     # Thin spat_ave_cvfs_KF_EnKF  in time
   
     ntime_spat_ave = dim(spat_ave_cvfs_KF_EnKF)[2]
-    time_thin = 10
+    time_thin = 5
     ind = seq(from = 1, to = ntime_spat_ave, by = time_thin)
     spat_ave_cvfs_KF_EnKF_thinned = spat_ave_cvfs_KF_EnKF[,ind] # will be used as the input data below
     ntime_B_KF_EnKF = dim(spat_ave_cvfs_KF_EnKF_thinned)[2]
@@ -572,7 +606,6 @@ if(B_source == "internal_PMT"){ # PMT: Median and pre-transform W, B, Sigma, spe
       }
     }
   }
-
   spat_ave_time_ave_cvf_KF_EnKF = apply(spat_ave_cvfs_KF_EnKF, 1, mean)
   b_ave_ave_statio_KF_EnKF =  Re( fft(spat_ave_time_ave_cvf_KF_EnKF, inverse=FALSE) /nx )
   
@@ -605,19 +638,24 @@ if(B_source == "internal_PMT"){ # PMT: Median and pre-transform W, B, Sigma, spe
     n_repl = ntime_B_KF_EnKF # adjust  n_repl
   }  
   
+  # select n_repl if LEARN=T
+  # Ensure that both  k=LrnPointsPerRepl  and   m=minibatch_size  are divisors of  n_train 
+  
   if(LEARN){
-    n_repl = ntime_B_KF_EnKF # when Learning, use all available data
+    n_repl = ntime_B_KF_EnKF # when Learning, use all available (possibly, thinned above) data
     
-    LrnSampleThinningStride_prelim = L_xi_median  / dx * 3 # meshes, prelim
-    LrnSampleThinningStride = nx / (nx %/% LrnSampleThinningStride_prelim)
-    LrnPointsPerRepl = nx  / LrnSampleThinningStride
-    if(LrnSampleThinningStride < 2) LrnSampleThinningStride = 2
-    if(LrnSampleThinningStride > nmax) LrnSampleThinningStride = nmax
+    if(B_source_KF_EnKF_spat_ave){
+      n_train = n_repl
+      
+    }else{
+      LrnSampleThinningStride_prelim = L_xi_median  / dx * 3 # meshes, prelim
+      LrnSampleThinningStride = nx / (nx %/% LrnSampleThinningStride_prelim)
+      LrnPointsPerRepl = nx  / LrnSampleThinningStride
+      if(LrnSampleThinningStride < 2) LrnSampleThinningStride = 2
+      if(LrnSampleThinningStride > nmax) LrnSampleThinningStride = nmax
+      n_train = n_repl * LrnPointsPerRepl 
+    }
     
-    # select n_repl if LEARN=T
-    # Ensure that both  k=LrnPointsPerRepl  and   m=minibatch_size  are divisors of  n_train 
-    
-    n_train = n_repl * LrnPointsPerRepl 
     message("n_train= ", n_train)
   }
   message("n_repl changed: ", n_repl)
@@ -637,6 +675,8 @@ band_centers_n  = BANDS$band_centers_n
 hhwidth = BANDS$hhwidth
 round(band_centers_n,1)
 round(hhwidth,1)
+
+save(tranfu, file="tranfu.RData")
 
 tranfu2 = (abs(tranfu))^2 # [i_n, j=1:J]
 
@@ -683,9 +723,9 @@ if(CALIBRATE) {
 }
 
 if(LEARN){
-  spatInd_NN_learn = seq(from = 1, by = LrnSampleThinningStride, to = nx)
-  nx_thinned = length(spatInd_NN_learn)
   if(B_source == "internal_PMT"){
+    spatInd_NN_learn = seq(from = 1, by = LrnSampleThinningStride, to = nx)
+    nx_thinned = length(spatInd_NN_learn)
     n_learningSample = nx_thinned * n_repl
   }else{
     n_learningSample = n_repl # if external B_KF cvfs are used, take one cvf per n_repl
@@ -771,16 +811,22 @@ RelMSE_Diag_S_lcz = c(1:n_repl)
                                                 i_repl=1
                                                 for(i_repl in 1:n_repl){
                                                   
-                                                if(n_repl100 > 0 & i_repl %% n_repl100 == 1){
-                                                  cat("\r",paste0(round(i_repl/n_repl*100,0),'%'))
-                                                }
+                                                  if(LEARN){
+                                                    if(n_repl100 > 0 & i_repl %% n_repl100 == 1){
+                                                    cat("\r",paste0(round(i_repl/n_repl*100,0),'%'))}
+                                                  }else{
+                                                    if(i_repl %% 10 == 1){
+                                                      cat("\r",paste0(round(i_repl/n_repl*100,0),'%'))}
+                                                  }
+                                                
                                                   t0=proc.time()
                                                 lplot=FALSE
                                                 #if(n_repl == 1) lplot=TRUE
 
 #-----------------------------------------------------------------------
 #-----------------------------------------------------------------------
-# Specify the true B, W, Sigma, b_true  (and CC) and ENSM
+# Specify the true B, W, Sigma, b_true  (and CC) 
+# and generate  ENSM
 # --- for any of the three sources of true B.                                            
                                                 
 if(B_source == "internal_PMT"){
@@ -946,9 +992,8 @@ if(B_source == "internal_PMT"){
 #-----------------------------------------------------------------------
 #-----------------------------------------------------------------------
 # Fit LSM: 
-# 1) Generate the ENSM
-# 2) E2B (from ENSM to sample Band variances)
-# 3) B2S (Band variances to local Spectra)
+# 1) E2B (from ENSM to sample Band variances)
+# 2) B2S (Band variances to local Spectra)
 
 perform_B2S = !LEARN # don't perform B2S if LEARN=T
 
@@ -979,9 +1024,10 @@ xi_Ve_Ms[i_repl]  = mean(xi_Ve)
 if(true_spectra_available){
   xi_VeE = xi_Ve - xi_Vt  # error in xi_Ve
   xi_Ve_AEs[i_repl] = ExAbs(xi_VeE)
-  
-  xi_V_LSM_E = xi_V_LSM - xi_Vt  # error in xi_Ve
-  xi_V_LSM_AEs[i_repl] = ExAbs(xi_V_LSM_E)
+  if(!LEARN){
+    xi_V_LSM_E = xi_V_LSM - xi_Vt  # error in xi_Ve
+    xi_V_LSM_AEs[i_repl] = ExAbs(xi_V_LSM_E)
+  }
 }
 
 # theoretical estm of SD(S).
@@ -995,7 +1041,7 @@ xi_Ve_TAD_Ms[i_repl] = mean(xi_Ve_TAD)
 # Variances: true, sample, & LSM: plots
 
 store_multiple_var_crl_plots = F
-if(store_multiple_var_crl_plots  & i_repl == 1 & true_spectra_available){ # replace == by >=  and
+if(!LEARN & store_multiple_var_crl_plots & i_repl == 1 & true_spectra_available){ # replace == by >=  and
                                           # set store_multiple_var_crl_plots=T 
                                           #if you wish to store multiple plots
                                           # BUT! Before that, run the script with large n_repl=300 or so
@@ -1633,7 +1679,7 @@ nn_nmon[i_repl] = sum(n_nmon)
 # Crl: true, sample, & LSM: plots
 
 store_multiple_var_crl_plots = F
-if(store_multiple_var_crl_plots & i_repl == 1 & true_spectra_available){# replace == by >=  and
+if(!LEARN & store_multiple_var_crl_plots & i_repl == 1 & true_spectra_available){# replace == by >=  and
                                    # set store_multiple_var_crl_plots=T 
                                    #if you wish to store multiple plots
                                    # BUT! Before that, run the script with large n_repl=300 or so
@@ -1904,6 +1950,9 @@ if(LEARN){
   
   # it = sample(1:dim(TrueSpectra)[1], 1)
   # plot(TrueSpectra[it,], type="l")
+  # TrueSpectra_nrmlzd = t(apply(TrueSpectra, 1, function(t) t/t[1] ))
+  # it = sample(1:dim(TrueSpectra)[1], 1)
+  # plot(TrueSpectra_nrmlzd[it,], type="l")
   
   x_train_transf = TransformSpectrum(x_train, type=TransformSpectrum_type_x, pow=TransformSpectrum_pow_x)
   y_train_transf = TransformSpectrum(y_train, type=TransformSpectrum_type_y, pow=TransformSpectrum_pow_y)
@@ -1980,6 +2029,9 @@ if(LEARN){
       if(loss_type == "L2"){
         loss = L2LossFunction(ff, gg)   
         
+      }else if(loss_type == "wL2"){
+        loss = wL2_loss(ff, gg, w0, nw1)
+        
       }else if(loss_type == "AEV"){
         loss = AEV_loss(ff, gg, r)
       }
@@ -2020,14 +2072,24 @@ if(LEARN){
   # Back transform the NN predictions 
   y_pred_full = TransformSpectrum(y_pred_transf_full, TransformSpectrum_type_y, 
                                    TransformSpectrum_pow_y, inverse = T)
-  # min(y_train_pred)
   
-  i=sample(1:n_sample, 1)
-  # i=1
-  mn = min(y_train[i,], y_pred_full[i,])
-  mx = max(y_train[i,], y_pred_full[i,])
-  plot(y_train[i,], ylim=c(mn,mx))
-  lines(y_pred_full[i,], col="red")
+  # # Plot conditional prediction bias for a single wvn
+  # 
+  # np1=1
+  # bias = y_pred_full[,np1] - y_train[,np1]
+  # # bias_smo = lowess(y_train[,np1], y=y_pred_full[,np1])$y
+  # plot(x=y_train[,np1], y=bias, main=paste0("NN prediction bias. wvn=", np1-1,
+  #                                           "\nmean bias=", signif(mean(bias),2)) )
+  # # lines(x=y_train[,np1], y=bias_smo, col="red")
+  # 
+  # # min(y_train_pred)
+  
+  # i=sample(1:n_sample, 1)
+  # # i=1
+  # mn = min(y_train[i,], y_pred_full[i,])
+  # mx = max(y_train[i,], y_pred_full[i,])
+  # plot(y_train[i,], ylim=c(mn,mx))
+  # lines(y_pred_full[i,], col="red")
 
   #----------------------
   # diagnostics
@@ -2481,4 +2543,3 @@ message("Anls_RMSE_x/Anls_RMSE_B_true -1:  \nB_LSEF: ",
 
 message("rel_dARMSE = ", signif(anls_RMSE_B_LSEF/anls_RMSE_B_true - 1, 3),
         "   rel_dARMSE_AEV_spec=", signif(rel_dARMSE_spec,2))
-
