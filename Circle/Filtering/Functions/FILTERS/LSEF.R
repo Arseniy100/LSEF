@@ -7,14 +7,11 @@ LSEF <- function(ntime_filter, nx, dt,
                   R_diag, m, OBS, 
                   B2S_method, NN, 
                   X_flt_start, Xae_start, B_clim, w_evc10,   
-                  ne, nband, b_shape, inflation_LSEF, C_lcz,
+                  ne, tranfu, b_shape, inflation_LSEF, C_lcz,
                   true_field_available, X_true_mdl_steps,
                   model_type){
   #-----------------------------------------------------------------------------------
   # LSEF: 
-  # 
-  # 
-  # 
   # 
   # Note that the "anls-fcst" cycle starts here from an timestep-0 field X_flt_start
   # and one cycle is {(i) fcst, (ii) anls}.
@@ -51,6 +48,7 @@ LSEF <- function(ntime_filter, nx, dt,
   # B_clim - static B
   # w_evc10 - relative weight of B_LSM vs B_clim
   # ne - ensm size
+  # tranfu - transfer functions of the bandpass filters [wvn=1:nx, j=1:J],  J=nband
   # inflation_LSEF - covariance inflation_LSEF coeficient 
   #       (defined as the multiplier of the fcts-ensm perturbations, i.e.
   #       the covariances are effectively multiplied by inflation_LSEF^2): =1 by default
@@ -69,14 +67,19 @@ LSEF <- function(ntime_filter, nx, dt,
   
   ntime_model = ntime_filter *stride   # nu of mdl time steps
   nmax = nx/2
-  J = nband
+  nband = dim(tranfu)[2] ;  J = nband
   true_spectra_available = FALSE
   
   # Checks (only DSADM model permitted at the moment)
   
+  if(nx != dim(tranfu)[1]){
+    print(str(tranfu))  
+    stop("LSEF: wrong nx in tranfu")
+  }
+  
   if(model_type != "DSADM"){ # & model_type != "Lorenz05" & model_type != "Lorenz05lin"){
     print(model_type)  
-    stop("HHBEF: wrong model_type")
+    stop("LSEF: wrong model_type")
   }
   
   #========================================================
@@ -86,6 +89,7 @@ LSEF <- function(ntime_filter, nx, dt,
   
   XXf = matrix(NA, nrow = nx, ncol = ntime_model)
   XXa = matrix(NA, nrow = nx, ncol = ntime_model)
+  S_mean = matrix(0,  nrow = nx, ncol = nx)
   B_mean = matrix(0,  nrow = nx, ncol = nx)
   
   # Obs related variables
@@ -108,25 +112,11 @@ LSEF <- function(ntime_filter, nx, dt,
   
   #========================================================
   
-  lplot=T
+  lplot=F
   iplot_stride = 100
   
-  #========================================================
-  # Create Bands
-  
-  q_tranfu=3
-  rectang = FALSE
-  
-  halfwidth_min = nx/60    #  nx/60
-  nc2 = nx/45              # nx/45
-  halfwidth_max = nx/6     # nx/8
-  
-  BANDS = CreateExpqBands(nmax, nband, halfwidth_min, nc2, halfwidth_max, 
-                          q_tranfu, rectang)
-  
-  tranfu = BANDS$tranfu
   tranfu2 = (abs(tranfu))^2 # [i_n, j=1:J]
-  band_centers_n  = BANDS$band_centers_n
+  band_centers_n = NULL
   
   # Omega and its SVD
   
@@ -213,6 +203,9 @@ LSEF <- function(ntime_filter, nx, dt,
       
       dXfe=(Xfe - matrix(rep(Xf, ne), nrow = nx)) * inflation_LSEF  # inflated fcst-ensm perturbations
       Xfe_inflated = matrix(rep(Xf, ne), nrow = nx) + dXfe
+      
+      S=tcrossprod(dXfe, dXfe) /ne
+      S_mean = S_mean + S           
       
       # E2B: Band variances
       
@@ -329,10 +322,13 @@ LSEF <- function(ntime_filter, nx, dt,
   #========================================================
   
   B_mean = B_mean / ntime_filter
+  S_mean = S_mean / ntime_filter
+  
   
   return(list(XXf = XXf[, ind_time_anls], 
               XXa = XXa[, ind_time_anls],
-              B_mean = B_mean
+              B_mean = B_mean, 
+              S_mean = S_mean
   ))
 
 }
