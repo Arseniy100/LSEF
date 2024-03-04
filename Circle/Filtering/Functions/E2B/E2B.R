@@ -18,7 +18,7 @@ E2B = function(ENSM, tranfu, BOOTENS, nB, true_spectra_available){
   #
   #
   # return: band_Ve, band_Ve_B, H1, H2, H_big1, H_big2, pphi1, pphi2, 
-  #         Gamma1_true, Gamma2_true, cvm_phi1_estm, cvm_phi2_estm
+  #         Gamma_phi_1_true, Gamma_phi_2_true, cvm_phi1_estm, cvm_phi2_estm
   #         b_Ms_estm
   #
   #  M Tsy 2021 Mar
@@ -111,12 +111,20 @@ E2B = function(ENSM, tranfu, BOOTENS, nB, true_spectra_available){
     }
   }
   
-  # band=1
+  # band=J # 1 J
   # plot (ENSM[,band], type="l", xlab="Grid point",
   #       main=paste0("xi & xi_bandpass (red). band=", band,
   #                   "\n Band's center=", band_centers_n[band], " Band's halfwidth=", hhwidth[band]))
   # lines(Re(ENSM_bandpass[,1,band]), type="l", col="red")
-  #
+  # 
+  # e_diff = diff(ENSM[,band])
+  # Le = sd(ENSM[,band]) / sd(e_diff)
+  # Le
+  # 
+  # eb_diff = diff(Re(ENSM_bandpass[,1,band]))
+  # Leb = sd(Re(ENSM_bandpass[,1,band])) / sd(eb_diff)
+  # Leb
+  # 
   # band=round(nband/3)
   # plot(Re(ENSM_bandpass[,1,band]), type="l", main=paste0("ie=1: Re(bandpass-flt). band=", band), xlab="x")
   # plot(Im(ENSM_bandpass[,1,band]), main=paste0("ie=1: Im(bandpass-flt). band=", band), xlab="x")
@@ -168,273 +176,274 @@ E2B = function(ENSM, tranfu, BOOTENS, nB, true_spectra_available){
     band_Ve_B = NULL
   }
   
-  #----------------------------------------------------------------------
-  # For each  ix  and each ensm member  ie,  compute the centered 
-  # bandpass filtred ensm members: 
-  #    pphi[j, ie, ix] = d_ENSM_bandpass[ix, ie, j] -- cplx valued!
+  # Play with the bandpass fltred fields
   
-  pphi = array(0, dim=c(J, ne, nx))  # NB: reversed indices in  pphi   wrt  b_true etc.!
-  
-  for (ie in 1:ne){
-    pphi[,ie,] = t(d_ENSM_bandpass[,ie,]) # reverse indices: pphi[j,ie,ix]
-  }
-  pphi1 = Re(pphi)
-  
-  # With symmetric bands 1 and J, the I part, 
-  # pphi2[1,,] = pphi2[J,,] = 0
-  # Therefore, take only the  [2:(J-1)]  section in Im(pphi)
-   
-  pphi2 = Im( pphi[2:(J-1),,] )  # bands from 2 to J-1
-  
-  #----------------------------------------------------------------------
-  # Calc sample covs.
-  # For each  ix,  compute  
-  #  the sample cvm of pphi1, pphi2, & cross-cvm-phi12   
-  #    cvm_phi1_estm = 1/(ne-1) * pphi1 *pphi^T  etc.
-  
-  cvm_phi1_estm  = array(0, dim=c(J,J,nx))
-  cvm_phi2_estm  = array(0, dim=c(Jm2,Jm2,nx))
-  cvm_phi12_estm = array(0, dim=c(J,Jm2,nx))
-  
-  for (ix in 1:nx){
-    cvm_phi1_estm[,,ix] =  1/(ne-1) * tcrossprod(pphi1[,,ix], pphi1[,,ix])
-    cvm_phi2_estm[,,ix] =  1/(ne-1) * tcrossprod(pphi2[,,ix], pphi2[,,ix])
-    cvm_phi12_estm[,,ix] = 1/(ne-1) * tcrossprod(pphi1[,,ix], pphi2[,,ix])
-  }
-  
-  #----------------------------------------------------------------------
-  # Calc H1 and H2.
-  # H[1:J, 1:nx] - the whole circle of wvns
-  # 
-  # H1[j=1:J, i_n= 1:nmaxp1] - only nonneg wvns
-  # H2[j'=1:(J-2), i_n= 1:nmaxm1] - only nonneg wvns w/o n=0 and n=nmax
-  #                                 and with j=1 & j=J bands withheld
-  #                                 (as these bands are SYMM ==> Im(pphi)=0 there)
-  # NB: pphi2 = 0 for the 2 symm bands: j=1 and j-J.
-  # 
-  # H1(n) = 1/sqrt(2) * (H(n) + H(-n))
-  # H2(n) = 1/sqrt(2) * (H(n) + H(-n))
-  # 
-  # i_n_symm = 2*nmaxp1 - i_n
-  
-  H = t(tranfu)
-  
-  H1 = matrix(0, nrow = J,   ncol = nmaxp1)
-  H2 = matrix(0, nrow = Jm2, ncol = nmaxm1)
-  
-  for (n in c(0, nmax)){ # the 2 extreme wvns, whr Im parts =0
-    i_n=n+1
-    H1[,i_n] = H[,i_n] 
-  }
-   
-  for (n in 1:nmaxm1){  # all other wvns
-    i_n = n+1
-    i_n_symm = 2*nmaxp1 - i_n  # same as -n
-    H1[,i_n] = (H[,i_n] + H[, i_n_symm]) / sqrt(2)
-    H2[,n]   = (H[2:(J-1), i_n] - H[2:(J-1), i_n_symm]) / sqrt(2)
-  }
-  
-  # image2D(H1)
-  #----------------------------------------------------------------------
-  # Calc true theoretic cvms 
-  #    Gamma1 = H1 diag(f) H1^T
-  #    Gamma2 = H2 diag(f) H2^T
-  #
-  # NB H1 * diag(f)  is multiplying the 1st column of H1 by f1, the 2nd by f2, etc.
-  
-  if(true_spectra_available){
+  phiCVMs = F
+  if(phiCVMs){
+    #----------------------------------------------------------------------
+    # For each  ix  and each ensm member  ie,  compute the centered 
+    # bandpass filtred ensm members: 
+    #    pphi[j, ie, ix] = d_ENSM_bandpass[ix, ie, j] -- cplx valued!
     
-    Gamma1_true = array(0, dim = c(J,J,nx))
+    pphi = array(0, dim=c(J, ne, nx))  # NB: reversed indices in  pphi   wrt  b_true etc.!
     
-    for(ix in 1:nx){
-      F_true_columns = matrix(b_true[ix,1:nmaxp1], nrow = nmaxp1, ncol = J)
-      F_true_rows = t(F_true_columns)
-      
-      H1F = H1 * F_true_rows   # Compute H1 \circ F: Schur product to speed up
-      Gamma1_true[,,ix] = tcrossprod(H1F, H1)
+    for (ie in 1:ne){
+      pphi[,ie,] = t(d_ENSM_bandpass[,ie,]) # reverse indices: pphi[j,ie,ix]
+    }
+    pphi1 = Re(pphi)
+    
+    # With symmetric bands 1 and J, the I part, 
+    # pphi2[1,,] = pphi2[J,,] = 0
+    # Therefore, take only the  [2:(J-1)]  section in Im(pphi)
+    
+    pphi2 = Im( pphi[2:(J-1),,] )  # bands from 2 to J-1
+    
+    #----------------------------------------------------------------------
+    # Calc sample covs.
+    # For each  ix,  compute  
+    #  the sample cvm of pphi1, pphi2, & cross-cvm-phi12   
+    #    cvm_phi1_estm = 1/(ne-1) * pphi1 *pphi^T  etc.
+    
+    cvm_phi1_estm  = array(0, dim=c(J,J,nx))
+    cvm_phi2_estm  = array(0, dim=c(Jm2,Jm2,nx))
+    cvm_phi12_estm = array(0, dim=c(J,Jm2,nx))
+    
+    for (ix in 1:nx){
+      cvm_phi1_estm[,,ix] =  1/(ne-1) * tcrossprod(pphi1[,,ix], pphi1[,,ix])
+      cvm_phi2_estm[,,ix] =  1/(ne-1) * tcrossprod(pphi2[,,ix], pphi2[,,ix])
+      cvm_phi12_estm[,,ix] = 1/(ne-1) * tcrossprod(pphi1[,,ix], pphi2[,,ix])
     }
     
-    Gamma2_true = array(0, dim = c(Jm2,Jm2,nx))
+    #----------------------------------------------------------------------
+    # Calc H1 and H2.
+    # H[1:J, 1:nx] - the whole circle of wvns
+    # 
+    # H1[j=1:J, i_n= 1:nmaxp1] - only nonneg wvns
+    # H2[j'=1:(J-2), i_n= 1:nmaxm1] - only nonneg wvns w/o n=0 and n=nmax
+    #                                 and with j=1 & j=J bands withheld
+    #                                 (as these bands are SYMM ==> Im(pphi)=0 there)
+    # NB: pphi2 = 0 for the 2 symm bands: j=1 and j-J.
+    # 
+    # H1(n) = 1/sqrt(2) * (H(n) + H(-n))
+    # H2(n) = 1/sqrt(2) * (H(n) + H(-n))
+    # 
+    # i_n_symm = 2*nmaxp1 - i_n
     
-    for(ix in 1:nx){
-      Fm2_true_columns = matrix(b_true[ix,2:nmax], nrow = nmaxm1, ncol = Jm2)
-      Fm2_true_rows = t(Fm2_true_columns)
-      
-      H2F = H2 * Fm2_true_rows   # Compute HF: Schur product to speed up
-      Gamma2_true[,,ix] = tcrossprod(H2F, H2)
+    H = t(tranfu)
+    
+    H1 = matrix(0, nrow = J,   ncol = nmaxp1)
+    H2 = matrix(0, nrow = Jm2, ncol = nmaxm1)
+    
+    for (n in c(0, nmax)){ # the 2 extreme wvns, whr Im parts =0
+      i_n=n+1
+      H1[,i_n] = H[,i_n] 
     }
     
-    lplot = F
-    if(lplot){
+    for (n in 1:nmaxm1){  # all other wvns
+      i_n = n+1
+      i_n_symm = 2*nmaxp1 - i_n  # same as -n
+      H1[,i_n] = (H[,i_n] + H[, i_n_symm]) / sqrt(2)
+      H2[,n]   = (H[2:(J-1), i_n] - H[2:(J-1), i_n_symm]) / sqrt(2)
+    }
+    
+    # image2D(H1)
+    #----------------------------------------------------------------------
+    # Calc true theoretic cvms of  phi
+    #    Gamma_phi_1 = H1 diag(f) H1^T
+    #    Gamma_phi_2 = H2 diag(f) H2^T
+    #
+    # NB H1 * diag(f)  is multiplying the 1st column of H1 by f1, the 2nd by f2, etc.
+    
+    Gamma_phi_1_true = array(0, dim = c(J,J,nx))
+    Gamma_phi_2_true = array(0, dim = c(Jm2,Jm2,nx))
+    
+    if(true_spectra_available){
       
-      Gamma1_true_Ms = apply(Gamma1_true, c(1,2), mean)
-      Gamma2_true_Ms = apply(Gamma2_true, c(1,2), mean)
-      
-      cvm_phi1_estm_Ms = apply(cvm_phi1_estm, c(1,2), mean)
-      cvm_phi2_estm_Ms = apply(cvm_phi2_estm, c(1,2), mean)
-      cvm_phi12_estm_Ms = apply(cvm_phi12_estm, c(1,2), mean)
-      
-      
-      mx=max(cvm_phi1_estm_Ms, Gamma1_true_Ms)
-      mn=min(cvm_phi1_estm_Ms, Gamma1_true_Ms)
-      image2D(Gamma1_true_Ms, main="Gamma1_true_Ms", zlim=c(mn,mx))
-      image2D(cvm_phi1_estm_Ms, main="cvm_phi1_estm_Ms", zlim=c(mn,mx))
-      plot(diag(Gamma1_true_Ms), ylim=c(mn,mx), main="Gam1_true_Ms (circ), _estm")
-      lines(diag(cvm_phi1_estm_Ms))
-      
-      
-      mx=max(cvm_phi2_estm_Ms, Gamma2_true_Ms)
-      mn=min(cvm_phi2_estm_Ms, Gamma2_true_Ms)
-      image2D(Gamma2_true_Ms, main="Gamma2_true_Ms", zlim=c(mn,mx))
-      image2D(cvm_phi2_estm_Ms, main="cvm_phi2_estm_Ms", zlim=c(mn,mx))
-      plot(diag(Gamma2_true_Ms), ylim=c(mn,mx), main="Gam2_true_Ms (circ), _estm")
-      lines(diag(cvm_phi2_estm_Ms))
-      
-      
-      image2D(cvm_phi12_estm_Ms, main="cvm_phi12_estm_Ms")
-      mx=max(cvm_phi12_estm_Ms)
-      mn=min(cvm_phi12_estm_Ms)
-      plot(cvm_phi12_estm_Ms[1,], ylim=c(mn,mx), main="rows of cvm_phi12_estm_Ms")
-      for (j in 2:J){
-        lines(cvm_phi12_estm_Ms[j,])
+      for(ix in 1:nx){
+        F_true_columns = matrix(b_true[ix,1:nmaxp1], nrow = nmaxp1, ncol = J)
+        F_true_rows = t(F_true_columns)
+        
+        H1F = H1 * F_true_rows   # Compute H1 \circ F: Schur product to speed up
+        Gamma_phi_1_true[,,ix] = tcrossprod(H1F, H1)
       }
       
-      ix=sample(1:nx, 1)
-      
-      mx=max(cvm_phi1_estm[,,ix], Gamma1_true[,,ix])
-      mn=min(cvm_phi1_estm[,,ix], Gamma1_true[,,ix])
-      image2D(Gamma1_true[,,ix], main="Gamma1_true", zlim=c(mn,mx))
-      image2D(cvm_phi1_estm[,,ix], main="cvm_phi1_estm", zlim=c(mn,mx))
-      plot(diag(Gamma1_true[,,ix]), ylim=c(mn,mx), main="Gam1_true (circ), _estm")
-      lines(diag(cvm_phi1_estm[,,ix]))
-      
-      
-      mx=max(cvm_phi2_estm[,,ix], Gamma2_true[,,ix])
-      mn=min(cvm_phi2_estm[,,ix], Gamma2_true[,,ix])
-      image2D(Gamma2_true[,,ix], main="Gamma2_true", zlim=c(mn,mx))
-      image2D(cvm_phi2_estm[,,ix], main="cvm_phi2_estm", zlim=c(mn,mx))
-      plot(diag(Gamma2_true[,,ix]), ylim=c(mn,mx), main="Gam2_true (circ), _estm")
-      lines(diag(cvm_phi2_estm[,,ix]))
-      
-      
-      mx=max(cvm_phi12_estm[,,ix], Gamma2_true[,,ix])
-      mn=min(cvm_phi12_estm[,,ix], Gamma2_true[,,ix])
-      image2D(cvm_phi12_estm[,,ix], main="cvm_phi12_estm", zlim=c(mn,mx))
-      plot(diag(Gamma2_true[,,ix]), ylim=c(mn,mx), main="Gam2_true (circ), CROSS-12")
-      lines(diag(cvm_phi12_estm[,,ix]))
-      
-      max(abs(cvm_phi12_estm[,,ix])) / max(abs(Gamma2_true[,,ix]))
-      
-      # Test band_Vt, band_Ve
-      
-      band_Vt_ = matrix(0, nrow = nx, ncol = J)
-      band_Ve_ = matrix(0, nrow = nx, ncol = J)
-      
-      for (ix in 1:nx){
-        band_Vt_1 = diag(Gamma1_true[,,ix])
-        band_Vt_2 = diag(Gamma2_true[,,ix])
+      for(ix in 1:nx){
+        Fm2_true_columns = matrix(b_true[ix,2:nmax], nrow = nmaxm1, ncol = Jm2)
+        Fm2_true_rows = t(Fm2_true_columns)
         
-        band_Vt_[ix,] = band_Vt_1 
-        band_Vt_[ix,2:Jm1] = band_Vt_[ix,2:Jm1] + band_Vt_2
-        
-        band_Ve_1 = diag(cvm_phi1_estm[,,ix])
-        band_Ve_2 = diag(cvm_phi2_estm[,,ix])
-        
-        band_Ve_[ix,] = band_Ve_1 
-        band_Ve_[ix,2:Jm1] = band_Ve_[ix,2:Jm1] + band_Ve_2
+        H2F = H2 * Fm2_true_rows   # Compute HF: Schur product to speed up
+        Gamma_phi_2_true[,,ix] = tcrossprod(H2F, H2)
       }
       
-      max(abs(band_Vt - band_Vt_)) # OK
-      max(abs(band_Ve - band_Ve_)) # OK
+      lplot = F
+      if(lplot){
+        
+        Gamma_phi_1_true_Ms = apply(Gamma_phi_1_true, c(1,2), mean)
+        Gamma_phi_2_true_Ms = apply(Gamma_phi_2_true, c(1,2), mean)
+        
+        cvm_phi1_estm_Ms = apply(cvm_phi1_estm, c(1,2), mean)
+        cvm_phi2_estm_Ms = apply(cvm_phi2_estm, c(1,2), mean)
+        cvm_phi12_estm_Ms = apply(cvm_phi12_estm, c(1,2), mean)
+        
+        
+        mx=max(cvm_phi1_estm_Ms, Gamma_phi_1_true_Ms)
+        mn=min(cvm_phi1_estm_Ms, Gamma_phi_1_true_Ms)
+        image2D(Gamma_phi_1_true_Ms, main="Gamma_phi_1_true_Ms", zlim=c(mn,mx))
+        image2D(cvm_phi1_estm_Ms, main="cvm_phi1_estm_Ms", zlim=c(mn,mx))
+        plot(diag(Gamma_phi_1_true_Ms), ylim=c(mn,mx), main="Gam1_true_Ms (circ), _estm")
+        lines(diag(cvm_phi1_estm_Ms))
+        
+        
+        mx=max(cvm_phi2_estm_Ms, Gamma_phi_2_true_Ms)
+        mn=min(cvm_phi2_estm_Ms, Gamma_phi_2_true_Ms)
+        image2D(Gamma_phi_2_true_Ms, main="Gamma_phi_2_true_Ms", zlim=c(mn,mx))
+        image2D(cvm_phi2_estm_Ms, main="cvm_phi2_estm_Ms", zlim=c(mn,mx))
+        plot(diag(Gamma_phi_2_true_Ms), ylim=c(mn,mx), main="Gam2_true_Ms (circ), _estm")
+        lines(diag(cvm_phi2_estm_Ms))
+        
+        
+        image2D(cvm_phi12_estm_Ms, main="cvm_phi12_estm_Ms")
+        mx=max(cvm_phi12_estm_Ms)
+        mn=min(cvm_phi12_estm_Ms)
+        plot(cvm_phi12_estm_Ms[1,], ylim=c(mn,mx), main="rows of cvm_phi12_estm_Ms")
+        for (j in 2:J){
+          lines(cvm_phi12_estm_Ms[j,])
+        }
+        
+        ix=sample(1:nx, 1)
+        
+        mx=max(cvm_phi1_estm[,,ix], Gamma_phi_1_true[,,ix])
+        mn=min(cvm_phi1_estm[,,ix], Gamma_phi_1_true[,,ix])
+        image2D(Gamma_phi_1_true[,,ix], main="Gamma_phi_1_true", zlim=c(mn,mx))
+        image2D(cvm_phi1_estm[,,ix], main="cvm_phi1_estm", zlim=c(mn,mx))
+        plot(diag(Gamma_phi_1_true[,,ix]), ylim=c(mn,mx), main="Gam1_true (circ), _estm")
+        lines(diag(cvm_phi1_estm[,,ix]))
+        
+        
+        mx=max(cvm_phi2_estm[,,ix], Gamma_phi_2_true[,,ix])
+        mn=min(cvm_phi2_estm[,,ix], Gamma_phi_2_true[,,ix])
+        image2D(Gamma_phi_2_true[,,ix], main="Gamma_phi_2_true", zlim=c(mn,mx))
+        image2D(cvm_phi2_estm[,,ix], main="cvm_phi2_estm", zlim=c(mn,mx))
+        plot(diag(Gamma_phi_2_true[,,ix]), ylim=c(mn,mx), main="Gam2_true (circ), _estm")
+        lines(diag(cvm_phi2_estm[,,ix]))
+        
+        
+        mx=max(cvm_phi12_estm[,,ix], Gamma_phi_2_true[,,ix])
+        mn=min(cvm_phi12_estm[,,ix], Gamma_phi_2_true[,,ix])
+        image2D(cvm_phi12_estm[,,ix], main="cvm_phi12_estm", zlim=c(mn,mx))
+        plot(diag(Gamma_phi_2_true[,,ix]), ylim=c(mn,mx), main="Gam2_true (circ), CROSS-12")
+        lines(diag(cvm_phi12_estm[,,ix]))
+        
+        max(abs(cvm_phi12_estm[,,ix])) / max(abs(Gamma_phi_2_true[,,ix]))
+        
+        # Test band_Vt, band_Ve
+        
+        band_Vt_ = matrix(0, nrow = nx, ncol = J)
+        band_Ve_ = matrix(0, nrow = nx, ncol = J)
+        
+        for (ix in 1:nx){
+          band_Vt_1 = diag(Gamma_phi_1_true[,,ix])
+          band_Vt_2 = diag(Gamma_phi_2_true[,,ix])
+          
+          band_Vt_[ix,] = band_Vt_1 
+          band_Vt_[ix,2:Jm1] = band_Vt_[ix,2:Jm1] + band_Vt_2
+          
+          band_Ve_1 = diag(cvm_phi1_estm[,,ix])
+          band_Ve_2 = diag(cvm_phi2_estm[,,ix])
+          
+          band_Ve_[ix,] = band_Ve_1 
+          band_Ve_[ix,2:Jm1] = band_Ve_[ix,2:Jm1] + band_Ve_2
+        }
+        
+        max(abs(band_Vt - band_Vt_)) # OK
+        max(abs(band_Ve - band_Ve_)) # OK
+        
+        # band_Vt_Ms_ = apply(band_Vt_, 2, mean)
+        # band_Ve_Ms_ = apply(band_Ve_, 2, mean)
+        # plot(band_Vt_Ms_)
+        # lines(band_Ve_Ms_)
+      }
+    } else{ # true_spectra_available = FALSE
       
-      # band_Vt_Ms_ = apply(band_Vt_, 2, mean)
-      # band_Ve_Ms_ = apply(band_Ve_, 2, mean)
-      # plot(band_Vt_Ms_)
-      # lines(band_Ve_Ms_)
     }
-  } else{ # true_spectra_available = FALSE
     
-    Gamma1_true = NULL
-    Gamma2_true = NULL
-  }
-  
-  #----------------------------------------------------------------------
-  # Calc  H_big  - obs oprt for CVMs of  pphi1, pphi2:
-  # 
-  #    H_big * f = ( \vech Gamma1, \vech Gamma2)
-  #    
-  # (\vech vectorizes the lower triangle of a mx)
-  # 
-  #    H1 * diag(f) * H1^T = Gamma1 
-  # 
-  # Gamma1_j1,j2 = sum_l H1_j1,l * H1_j2,l * f_l   ==>
-  #    
-  #    H_big(i1D(j1,j2)) = H1_j1,l * H1_j2,l
-  
-  n_big1 = J*(J+1)/2
-  H_big1 = matrix(0, nrow = n_big1, ncol = lmaxp1)
-  
-  i1D=0
-  for (j1 in 1:J){
-    for (j2 in j1:J){
-      i1D = i1D +1
-      H_big1[i1D,] = H1[j1,] * H1[j2,]
+    #----------------------------------------------------------------------
+    # Calc  H_big  - obs oprt for CVMs of  pphi1, pphi2:
+    # 
+    #    H_big * f = ( \vech Gamma_phi_1, \vech Gamma_phi_2)
+    #    
+    # (\vech vectorizes the lower triangle of a mx)
+    # 
+    #    H1 * diag(f) * H1^T = Gamma_phi_1 
+    # 
+    # Gamma_phi_1_j1,j2 = sum_l H1_j1,l * H1_j2,l * f_l   ==>
+    #    
+    #    H_big(i1D(j1,j2)) = H1_j1,l * H1_j2,l
+    
+    n_big1 = J*(J+1)/2
+    H_big1 = matrix(0, nrow = n_big1, ncol = lmaxp1)
+    
+    i1D=0
+    for (j1 in 1:J){
+      for (j2 in j1:J){
+        i1D = i1D +1
+        H_big1[i1D,] = H1[j1,] * H1[j2,]
+      }
+    }
+    
+    # ix=1
+    # v1 = H_big1 %*% b_true[ix,1:nmaxp1]
+    # v2 = vechMat(Gamma_phi_1_true[,,ix])
+    # max(abs(v1-v2))
+    
+    n_big2 = (J-2)*(J-1)/2
+    H_big2 = matrix(0, nrow = n_big2, ncol = lmaxp1)
+    
+    i1D=0
+    for (j1 in 1:Jm2){
+      for (j2 in j1:Jm2){
+        i1D = i1D +1
+        H_big2[i1D,2:lmax] = H2[j1,] * H2[j2,]
+      }
+    }
+    
+    # ix=1
+    # v1 = H_big2 %*% b_true[ix,1:nmaxp1]
+    # v2 = vechMat(Gamma_phi_2_true[,,ix])
+    # max(abs(v1-v2))
+    
+    #----------------------------------------------------------------------
+    # TEST  B2S_costfu_lik
+    # Only the Re-component:  H1, pphi1, etc. is tested at one ix
+    
+    ltest_B2S_costfu=F
+    
+    if(ltest_B2S_costfu & true_spectra_available){ 
+      ix=sample(1,1:nx)
+      f_true = b_true[ix,1:nmaxp1]
+      phi = pphi1[,,ix]
+      test_B2S_lik(f_true, phi, H1)
+      
+      
+      f_clim = b_median_1D[1:nmaxp1]
+      
+      test_B2S_prior(f_true, f_clim)
     }
   }
-  
-  # ix=1
-  # v1 = H_big1 %*% b_true[ix,1:nmaxp1]
-  # v2 = vechMat(Gamma1_true[,,ix])
-  # max(abs(v1-v2))
-  
-  n_big2 = (J-2)*(J-1)/2
-  H_big2 = matrix(0, nrow = n_big2, ncol = lmaxp1)
-  
-  i1D=0
-  for (j1 in 1:Jm2){
-    for (j2 in j1:Jm2){
-      i1D = i1D +1
-      H_big2[i1D,2:lmax] = H2[j1,] * H2[j2,]
-    }
-  }
-  
-  # ix=1
-  # v1 = H_big2 %*% b_true[ix,1:nmaxp1]
-  # v2 = vechMat(Gamma2_true[,,ix])
-  # max(abs(v1-v2))
-    
-  #----------------------------------------------------------------------
-  # TEST  B2S_costfu_lik
-  # Only the Re-component:  H1, pphi1, etc. is tested at one ix
-  
-  ltest_B2S_costfu=F
-  
-  if(ltest_B2S_costfu & true_spectra_available){ 
-    ix=sample(1,1:nx)
-    f_true = b_true[ix,1:nmaxp1]
-    phi = pphi1[,,ix]
-    test_B2S_lik(f_true, phi, H1)
-    
-
-    f_clim = b_median_1D[1:nmaxp1]
-    
-    test_B2S_prior(f_true, f_clim)
-    
-  }
-  
   #----------------------------------------------------------------------
   
   return(list("band_Ve"=band_Ve,      #[ix=1:nx, j=1:J]
-              "b_Ms_estm"=b_Ms_estm,  # [i_n=1:nx]
               "band_Ve_B"=band_Ve_B,  #[ix=1:nx, j=1:J, iB=1:nB]
-              "H1"=H1,       # [j=1:J, lp1=1:lmaxp1]
-              "H2"=H2,       # [jm1=1:(J-2), l=1:lmaxm1]  (w/o bands 1 & J, wvns l=0 & lmax)
-              "H_big1"=H_big1, # [i1D=1:n_big1, 1:lmaxp1]
-              "H_big2"=H_big2, # [i1D=1:n_big2, 1:lmaxp1]
-              "pphi1"=pphi1, # [j=1:J,       ie=1:ne, ix=1:nx]
-              "pphi2"=pphi2, # [jm1=1:(J-2), ie=1:ne, ix=1:nx]
-              "Gamma1_true"=Gamma1_true,  # [1:J,     1:J,     ix=1:nx]
-              "Gamma2_true"=Gamma2_true,  # [1:(J-2), 1:(J-2), ix=1:nx] (w/o bands 1 & J)
-              "cvm_phi1_estm"=cvm_phi1_estm,   # [1:J,     1:J,     ix=1:nx]
-              "cvm_phi2_estm"=cvm_phi2_estm))  # [1:(J-2), 1:(J-2), ix=1:nx] (w/o bands 1 & J)
+              "b_Ms_estm"=b_Ms_estm)) # [i_n=1:nx]
+              
+              # "H1"=H1,       # [j=1:J, lp1=1:lmaxp1]
+              # "H2"=H2,       # [jm1=1:(J-2), l=1:lmaxm1]  (w/o bands 1 & J, wvns l=0 & lmax)
+              # "H_big1"=H_big1, # [i1D=1:n_big1, 1:lmaxp1]
+              # "H_big2"=H_big2, # [i1D=1:n_big2, 1:lmaxp1]
+              # "pphi1"=pphi1, # [j=1:J,       ie=1:ne, ix=1:nx]
+              # "pphi2"=pphi2, # [jm1=1:(J-2), ie=1:ne, ix=1:nx]
+              # "Gamma_phi_1_true"=Gamma_phi_1_true,  # [1:J,     1:J,     ix=1:nx]
+              # "Gamma_phi_2_true"=Gamma_phi_2_true,  # [1:(J-2), 1:(J-2), ix=1:nx] (w/o bands 1 & J)
+              # "cvm_phi1_estm"=cvm_phi1_estm,   # [1:J,     1:J,     ix=1:nx]
+              # "cvm_phi2_estm"=cvm_phi2_estm))  # [1:(J-2), 1:(J-2), ix=1:nx] (w/o bands 1 & J)
 }
