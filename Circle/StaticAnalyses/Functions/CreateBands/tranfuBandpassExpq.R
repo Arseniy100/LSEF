@@ -92,13 +92,10 @@ tranfuBandpassExpq = function(nmax, nc, halfwidth,
       dn = n - nc
       if(dn >  nx/2) dn = dn - nx
       if(dn < -nx/2) dn = dn + nx
-      
-      #    dn_chordal = nx/pi * sin(dn/(nx/pi)). OK
-      
-      nxdpi=nx/pi
-      dn_chordal = nxdpi * sin(dn/nxdpi)
-      
       tranfu[i_n] = exp( - ( abs( dn/halfwidth ) )^q_tranfu )
+      
+      # nxdpi=nx/pi
+      # dn_chordal = nxdpi * sin(dn/nxdpi)
       #tranfu[i_n] = exp( - ( abs( dn_chordal/halfwidth ) )^q_tranfu )
     }
   }
