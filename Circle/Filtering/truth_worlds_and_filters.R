@@ -114,7 +114,6 @@ truth_worlds_and_filters = function(seed){
   SaveClim        = config[config$V1 == "SaveClim", 2]
   ntime_EE_store  = config[config$V1 == "ntime_EE_store", 2]
   ntime_B_KF_store= config[config$V1 == "ntime_B_KF_store", 2]
-  nband           = config[config$V1 == "nband", 2]
   inflation       = config[config$V1 == "inflation", 2]
   inflation_LSEF  = config[config$V1 == "inflation_LSEF", 2]
   spa_shift_mx_S  = config[config$V1 == "spa_shift_mx_S", 2]
@@ -389,7 +388,6 @@ truth_worlds_and_filters = function(seed){
   parameters$perform_HHBEF        <- perform_HHBEF
   parameters$perform_LSEF         <- perform_LSEF
   parameters$B2S_method           <- B2S_method
-  parameters$nband                <- nband
   parameters$HHBEF_SelfClim       <- HHBEF_SelfClim
   parameters$w_cvr                <- w_cvr  
   parameters$w_evp10              <- w_evp10
@@ -408,7 +406,8 @@ truth_worlds_and_filters = function(seed){
   
   #------------------------------------------------------
   # DSADM: generate SECONDARY fields.
-  # Technique: generate TERTIARY fields and (point-wise) transform them to the SECONDARY fields.
+  # Technique: generate TERTIARY (pre-transform) fields and then
+  # (point-wise) transform them to the SECONDARY fields.
   # NB: Only ONE realization of each scnd field is generated: N_scnd=1
   
   if( model_type == "DSADM" ){ 
@@ -491,7 +490,6 @@ truth_worlds_and_filters = function(seed){
     
     # store current parameters$... to be compared with in a follow-up run
     # (to save time when running the model in the same model setup)
-    
   }
   
   #------------------------------------------------------
@@ -842,8 +840,10 @@ truth_worlds_and_filters = function(seed){
     lclz_mult = 1.6        # 20
   } else if(ne < 80){
     lclz_mult = 2.2        # 40
+  } else if(ne < 160) {               
+    lclz_mult = 2.6        # 80
   } else {               
-    lclz_mult = 2.6        # >= 80
+    lclz_mult = 3.2          # >=160
   } 
   
   L_lcz = lclz_mult * L
@@ -1007,6 +1007,10 @@ truth_worlds_and_filters = function(seed){
       NN = NULL
     }
     
+    # Read transfer functions  of the bandpass filters
+    
+    load("tranfu.RData")  # loads  tranfu
+    
     # select B_clim (needed for b_shape -- needed by B2S_SVshape)
     
     ClimFile=paste0("Clim_", "nx", nx,
@@ -1039,14 +1043,14 @@ truth_worlds_and_filters = function(seed){
                     R_diag, m, OBS, 
                     B2S_method, NN, 
                     X_flt_start,  Xae_start, B_clim, w_evc10,
-                    ne, nband, b_shape, inflation_LSEF, C_lcz,
+                    ne, tranfu, b_shape, inflation_LSEF, C_lcz,
                     true_field_available, X_true_mdl_steps,
                     model_type)
     
     LSEF_fRMSE  = rmse(LSEF_res$XXf[,], X_true[,])
     message("LSEF_fRMSE=", signif(LSEF_fRMSE, 4))
     
-    S_mean = HHBEF_res$S_mean
+    S_mean = LSEF_res$S_mean
     
     # mean fc spread
     
