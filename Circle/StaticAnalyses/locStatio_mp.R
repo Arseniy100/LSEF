@@ -170,33 +170,37 @@ source('./Functions/Varia/monotSmooFit.R')
 #--------------------------------------------------------------
 # external prms
 
-LEARN = T
-B_source = "external_EnKF" # "internal_PMT"  "external_KF"  "external_EnKF" -- CVMs to generate truth & ensm
+LEARN = F
+B_source = "internal_PMT" # "internal_PMT"  "external_KF"  "external_EnKF" -- CVMs to generate truth & ensm
 if(B_source != "internal_PMT"){
   B_source_KF_EnKF_spat_ave = T # if T: KF/EnKS's: spat-ave cvfs are handled & global (statio) spectra are used.
                                 # if F, full CVMs are use to fit LSM & use its loc.spectra to gen.training sample
-}
+}else{B_source_KF_EnKF_spat_ave = F}
 nx = 120; nmax=floor(nx/2); dx=2*pi/nx # nx sh.be a highly composite number (for fft)
-ne = 160  # ensm size
+ne = 10  # ensm size
 kappa = 2 # nstatio strength (NSS); =1...4;  kappa=1: statio; kappa=2 nrm
 NSL = 3 # Non-stationarity Length (relative to L_xi). NSL=3 nrm
 
-J=8 ; nband=J # nu of bands (6--10 nrm)
+J=6 ; nband=J # nu of bands (6--10 nrm, 6 for internal_PMT, 8 for cyclic LSEF)
 B2S_method = "NN" # SVshape NN LINSHAPE LINES PARAM 
 
 # Bands tuning
 bandWidth_mult = 1 # multiplier for all bands' halfwidths (default 1)
 nc2_mult = 1 # multiplier for nc2 (2nd band's tranfu-maximum wvn-location) (default 1)
 
-# BANDS' prms
-
-q_tranfu=2 # tranfu=exp(-|(n-nc)/halfwidth|^q_tranfu)) 2, 3 nrm
+q_tranfu=3 # tranfu=exp(-|(n-nc)/halfwidth|^q_tranfu)) 2, 3 nrm (2 for LSEF)
 if(q_tranfu >= 2){
   nc2=                nc2_mult * nx/20           # 360:/40                
   halfwidth_min=bandWidth_mult * nx/50 # 360:/50
   halfwidth_max=bandWidth_mult * nx/5  # 360:/5 
   
-  if(nx == 120){
+  if(nx == 120 & B_source == "internal_PMT"){
+    nc2=                nc2_mult * 2           # 360:/40                 
+    halfwidth_min=bandWidth_mult * 6.0 # ne5: =5 ne80: = 10
+    halfwidth_max=bandWidth_mult * 10.0 # ne5: =7 ne80: = 10
+    moments = "01"
+  }
+  if(nx == 120 & B_source == "external_EnKF"){
     nc2=                nc2_mult * 2           # 360:/40                 
     halfwidth_min=bandWidth_mult * 12.0 # ne5: =5 ne80: = 10
     halfwidth_max=bandWidth_mult * 12.0 # ne5: =7 ne80: = 10
@@ -313,16 +317,19 @@ obs_err_variance = (SDxi_med * sd_obs_rel_FG)^2 # NB: SDxi_med^2 is not exactly 
 repeated_obs_location = T # F or T allow several obs to be located at the same grid point?
 uniform_obs_cover = F # F nrm
 
-seed = 144
+seed = 1444
 # seed=seed+10
-set.seed(seed)  # fix start seed
+# set.seed(seed)  # fix start seed
 
-n_repl = 400 # only for verif anls (nx=120: set =200). LEARN=T & "internal_PMT" ==> n_repl is set just below 
+n_repl =300 # only for verif anls (nx=120: set =200). LEARN=T & "internal_PMT" ==> n_repl is set just below 
 
 if(!LEARN) message("n_repl=", n_repl)
 
 # Plotting
 l_CRL_COV_plots = 1 # 1 - spat crl, 2 - covar
+store_multiple_var_crl_plots = F # first, set F and run w n_repl=300, then set T and repeat
+                                 # make sure that  set.seed(seed)  is commented (to get dfr results)
+# counter=1 # uncomment when store_multiple_var_crl_plots = T for the 1st time 
 
 #--------------------------------------------------------------
 # derived and minor prms, synonyms
@@ -1040,8 +1047,7 @@ xi_Ve_TAD_Ms[i_repl] = mean(xi_Ve_TAD)
 #--------------------------------------------------------------------------------
 # Variances: true, sample, & LSM: plots
 
-store_multiple_var_crl_plots = F
-if(!LEARN & store_multiple_var_crl_plots & i_repl == 1 & true_spectra_available){ # replace == by >=  and
+if(!LEARN & store_multiple_var_crl_plots & i_repl < 301 & true_spectra_available){ # replace == by >=  and
                                           # set store_multiple_var_crl_plots=T 
                                           #if you wish to store multiple plots
                                           # BUT! Before that, run the script with large n_repl=300 or so
@@ -1050,8 +1056,6 @@ if(!LEARN & store_multiple_var_crl_plots & i_repl == 1 & true_spectra_available)
   # xi_Ve_upp = xi_Ve + xi_Ve_TD
   # xi_Ve_low = xi_Ve - xi_Ve_TD
   # xi_Ve_low[xi_Ve_low<0] = 0
-  
-  # counter=1 # initialize & then comment if you wish to store multiple plots
   
   greenish = rgb(0,0.7,0)
   
@@ -1077,15 +1081,13 @@ if(!LEARN & store_multiple_var_crl_plots & i_repl == 1 & true_spectra_available)
     # lines(xi_Ve_low, type="l", col="green", lty=3)
     # lines(xi_Ve_upp, type="l", col="green", lty=3)
     
-    leg.txt<-c('Truth', 'Sample', 'Model')
+    leg.txt<-c('Truth', 'Sample', 'Spatial model')
     leg.col<-c("black", greenish, "purple")
     legend("topright", inset=0, leg.txt, col=leg.col, 
            lwd=c(NA,2,2), lty=c(NA,3,1), pch=c(8,NA,NA),
            cex=1.3, pt.cex=0.5, bg="white")
     abline(h=0, lty=3)
     dev.off()
-    
-    counter=counter+1
   }
 }
 #--------------------------------------------------------------------------------
@@ -1678,16 +1680,11 @@ nn_nmon[i_repl] = sum(n_nmon)
 #--------------------------------------------------------------------------------
 # Crl: true, sample, & LSM: plots
 
-store_multiple_var_crl_plots = F
-if(!LEARN & store_multiple_var_crl_plots & i_repl == 1 & true_spectra_available){# replace == by >=  and
+if(!LEARN & store_multiple_var_crl_plots & i_repl < 301 & true_spectra_available){# replace == by >=  and
                                    # set store_multiple_var_crl_plots=T 
                                    #if you wish to store multiple plots
                                    # BUT! Before that, run the script with large n_repl=300 or so
-                                   # to get  ratio_large_sample  and  xi_V_LSM_AEsr  
-                                   # needed below.
-  
-  # counter=1 # initialize & then comment if you wish to store multiple plots
-  
+                                   # to get  ratio_global  needed below.
   greenish = rgb(0,0.7,0)
   
   ratio_global = MAE_crl_S_lcz / MAE_crl_LSM
@@ -1695,7 +1692,7 @@ if(!LEARN & store_multiple_var_crl_plots & i_repl == 1 & true_spectra_available)
   #distances for plotting
   ddist = c((-Dx_align:-1), 0, (1:Dx_align))
   
-  for (ix in seq(from=1, to=nx, by=10)){
+  for (ix in seq(from=1, to=nx, by=20)){
     mx=max( aligned_C[ix, nx1_align:nx2_align], aligned_CS_lcz[ix, nx1_align:nx2_align], aligned_C_LSM[ix, nx1_align:nx2_align] )
     mn=min( aligned_C[ix, nx1_align:nx2_align], aligned_CS_lcz[ix, nx1_align:nx2_align], aligned_C_LSM[ix, nx1_align:nx2_align] )
     if(mn > 0) mn=0
@@ -1719,7 +1716,7 @@ if(!LEARN & store_multiple_var_crl_plots & i_repl == 1 & true_spectra_available)
       lines(x=ddist, y=aligned_CS_lcz[ix, nx1_align:nx2_align], col=greenish, lwd=2, lty =3)
       lines(x=ddist, y=aligned_C_LSM [ix, nx1_align:nx2_align], col="purple", lwd=2, lty =1)
       
-      leg.txt<-c('Truth', 'Sample', 'Model')
+      leg.txt<-c('Truth', 'Localized sample', 'Spatial model')
       leg.col<-c("black", greenish, "purple")
       legend("topright", inset=0, leg.txt, col=leg.col, 
              lwd=c(NA,2,2), lty=c(NA,3,1), pch=c(8,NA,NA),
@@ -2159,10 +2156,10 @@ xi_Ve_AEsr   = mean(xi_Ve_AEs)
 xi_V_LSM_AEsr = mean(xi_V_LSM_AEs)
 xi_Ve_TAD_Msr = mean(xi_Ve_TAD_Ms) 
 
-i_repl=sample(1:n_repl_CC,1)
+i_re=sample(1:n_repl_CC,1)
 ix=sample(1:nx,1)
-plot(bb_LSM[ix,,i_repl]/bb_LSM[ix,1,i_repl], main="b_LSM nrmlzd (red), b_shape, b_mean_KF(grn)", 
-     sub=paste0("i_repl=", i_repl, "  ix=",ix), xlab="Wavenumber+1", col="red", ylim=c(0,1), type="l") 
+plot(bb_LSM[ix,,i_re]/bb_LSM[ix,1,i_re], main="b_LSM nrmlzd (red), b_shape, b_mean_KF(grn)", 
+     sub=paste0("i_repl=", i_re, "  ix=",ix), xlab="Wavenumber+1", col="red", ylim=c(0,1), type="l") 
 lines(b_shape/b_shape[1])
 abline(h=0)
 
